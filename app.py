@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QTableWidgetItem
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QIcon
 from qqwry import QQwry
-from testConnShell import TestConn, scanDir, dns_resolver
+from testConnShell import TestConn, scanDir, dns_resolver, formatFileSize
 
 import mainWindowFront, addShell, genShellPhp
 
@@ -116,25 +116,23 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
 
     def displayShell(self):
         try:
-            url = self.tableWidget.item(self.row_num, 0).text()
-            password = self.tableWidget.item(self.row_num, 2).text()
-            r = TestConn(url, password)
-            data = r.split('\n')
+            self.url = self.tableWidget.item(self.row_num, 0).text()
+            self.password = self.tableWidget.item(self.row_num, 2).text()
+            r = TestConn(self.url, self.password)
+            self.data = r.split('\n')
             QtWidgets.QMessageBox.about(self, "连接成功！", r)
 
             self.tab_index += 1
             self.new_tab = QtWidgets.QWidget()
             self.new_tab.setObjectName('tab_' + str(self.tab_index))
 
-            self.layoutWidget = QtWidgets.QWidget(self.new_tab)
-            self.layoutWidget.setGeometry(QtCore.QRect(0, 0, 831, 521))
-            self.layoutWidget.setObjectName("layoutWidget")
-            self.gridLayout = QtWidgets.QGridLayout(self.layoutWidget)
-            self.gridLayout.setContentsMargins(0, 0, 0, 0)
+            self.gridLayout_2 = QtWidgets.QGridLayout(self.new_tab)
+            self.gridLayout_2.setObjectName("gridLayout_2")
+            self.gridLayout = QtWidgets.QGridLayout()
             self.gridLayout.setObjectName("gridLayout")
-            self.tableWidget_2 = QtWidgets.QTableWidget(self.layoutWidget)
+            self.tableWidget_2 = QtWidgets.QTableWidget(self.new_tab)
             self.tableWidget_2.setObjectName("tableWidget_2")
-            self.tableWidget_2.setColumnCount(3)
+            self.tableWidget_2.setColumnCount(4)
             self.tableWidget_2.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
 
             item = QtWidgets.QTableWidgetItem()
@@ -146,33 +144,29 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             item = QtWidgets.QTableWidgetItem()
             item.setText("大小")
             self.tableWidget_2.setHorizontalHeaderItem(2, item)
+            item = QtWidgets.QTableWidgetItem()
+            item.setText("属性")
+            self.tableWidget_2.setHorizontalHeaderItem(3, item)
 
             # 更新tableWidget_2
-            files = scanDir(url, password, data[0] + '/').split('\n')
+            files = scanDir(self.url, self.password, self.data[0] + '/').split('\n')
             files = list(filter(None, files))
-            for i in range(len(files) - 1, -1, -1):
-                if (files[i].split('\t'))[0].startswith('./') or  (files[i].split('\t'))[0].startswith('../'):
-                    files.remove(files[i])
-            self.tableWidget_2.setRowCount(len(files))
-            for i in range(len(files)):
-                for j in range(3):
-                    newItem = QTableWidgetItem(files[i].split('\t')[j])
-                    newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-                    self.tableWidget_2.setItem(i, j, newItem)
+            self.updataTable(files)
+
 
 
             self.gridLayout.addWidget(self.tableWidget_2, 1, 1, 1, 1)
-            self.treeWidget = QtWidgets.QTreeWidget(self.layoutWidget)
+            self.treeWidget = QtWidgets.QTreeWidget(self.new_tab)
             self.treeWidget.setObjectName("treeWidget")
 
             # tree信息初始化
             # 根节点
             self.root = QtWidgets.QTreeWidgetItem(self.treeWidget)
-            self.root.setText(0, data[1])
+            self.root.setText(0, self.data[1])
             self.root.setIcon(0, QIcon('D:/Project/Graduation Design/icons/default_folder.svg'))
 
-            # 更新子节点
-            folders = data[0][1:].split('/')
+            # 子节点
+            folders = self.data[0][1:].split('/')
             itemStack = [self.root]
             for i in range(len(folders)):
                 item = QtWidgets.QTreeWidgetItem(itemStack.pop())
@@ -180,28 +174,33 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                 item.setIcon(0, QIcon('D:/Project/Graduation Design/icons/default_folder.svg'))
                 itemStack.append(item)
 
+            #更新节点
+            self.treeWidget.clicked.connect(self.updateTree)
+
             self.treeWidget.header().setVisible(False)
             self.treeWidget.header().setHighlightSections(False)
             self.treeWidget.expandAll()
             self.gridLayout.addWidget(self.treeWidget, 1, 0, 1, 1)
-            self.label = QtWidgets.QLabel(self.layoutWidget)
+            self.label = QtWidgets.QLabel(self.new_tab)
             self.label.setMaximumSize(QtCore.QSize(91, 61))
             self.label.setTextFormat(QtCore.Qt.RichText)
             self.label.setScaledContents(False)
             self.label.setObjectName("label")
             self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
-            self.label_2 = QtWidgets.QLabel(self.layoutWidget)
+            self.label_2 = QtWidgets.QLabel(self.new_tab)
             self.label_2.setMaximumSize(QtCore.QSize(91, 61))
             self.label_2.setTextFormat(QtCore.Qt.RichText)
             self.label_2.setScaledContents(False)
             self.label_2.setObjectName("label_2")
             self.gridLayout.addWidget(self.label_2, 0, 1, 1, 1)
+            self.gridLayout_2.addLayout(self.gridLayout, 0, 0, 1, 1)
             self.label.setText(
                 "<html><head/><body><p align=\"center\"><span style=\" font-size:16pt; font-weight:600;\">目录列表</span></p></body></html>")
             self.label_2.setText(
                 "<html><head/><body><p align=\"center\"><span style=\" font-size:16pt; font-weight:600;\">文件列表</span></p></body></html>")
 
             self.tabWidget.addTab(self.new_tab, self.tableWidget.item(self.row_num, 1).text())
+            self.horizontalLayout.addWidget(self.tabWidget)
             self.xbutton = QtWidgets.QPushButton("x")
             self.xbutton.setFixedSize(16, 16)
             self.xbutton.clicked.connect(lambda: self.del_tab(self.tab_index))
@@ -209,6 +208,71 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             self.tabWidget.setCurrentIndex(self.tab_index)
         except Exception as e:
             QtWidgets.QMessageBox.about(self, "连接失败！", str(Exception(e)))
+
+    def updataTable(self, files):
+        for i in range(len(files) - 1, -1, -1):
+            if (files[i].split('\t'))[0].startswith('./') or (files[i].split('\t'))[0].startswith('../'):
+                files.remove(files[i])
+        self.tableWidget_2.setRowCount(len(files))
+        for i in range(len(files)):
+            for j in range(4):
+                if j == 2:
+                    newItem = QTableWidgetItem(formatFileSize(int(files[i].split('\t')[j]), 2))
+                else:
+                    newItem = QTableWidgetItem(files[i].split('\t')[j])
+                newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                self.tableWidget_2.setItem(i, j, newItem)
+
+    def updateTree(self):
+        item = self.treeWidget.currentItem()
+        if item.text(0) == self.data[1]:
+            dir = self.data[1]
+            if self.data[1] != '/':
+                dir += '/'
+        else:
+            dir = '/'
+            dir = '/' + item.text(0) + dir
+            while item.parent().text(0) != self.data[1]:
+                item = item.parent()
+                dir = '/' + item.text(0) + dir
+            if self.data[1] != '/':
+                dir = self.data[1] + dir
+        #print(dir)
+
+        try:
+            # 更新文件列表
+            files = scanDir(self.url, self.password, dir).split('\n')
+            files = list(filter(None, files))
+            self.updataTable(files)
+
+            # 更新目录列表
+            # print(files)
+
+            item = self.treeWidget.currentItem()
+            childL = []
+            childCount = item.childCount()
+            for i in range(childCount):
+                childL.append(item.child(i).text(0))
+
+            # print(childL)
+            fname = []
+            for f in files:
+                fs = f.split('\t')[0]
+                if fs.endswith('/'):
+                    fname.append(fs[:-1])
+                    if fs[:-1] not in childL:
+                        item = QtWidgets.QTreeWidgetItem(self.treeWidget.currentItem())
+                        item.setText(0, fs[:-1])
+                        item.setIcon(0, QIcon('D:/Project/Graduation Design/icons/default_folder.svg'))
+
+            item = self.treeWidget.currentItem()
+            for i in range(childCount - 1, -1, -1):
+                if item.child(i).text(0) not in fname:
+                    item.removeChild(item.child(i))
+        except Exception as e:
+            QtWidgets.QMessageBox.about(self, "连接失败！", str(Exception(e)))
+
+
 
 
 

