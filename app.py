@@ -6,9 +6,10 @@ import sys
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QTableWidgetItem, QMenu
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QIcon
+from PyQt5.QtWebEngineWidgets import QWebEngineView
 from qqwry import QQwry
-from testConnShell import TestConn, scanDir, dns_resolver, formatFileSize
-
+from functools import partial
+from testConnShell import TestConn, scanDir, dns_resolver, formatFileSize, downloadFile
 import mainWindowFront, addShell, genShellPhp
 
 class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
@@ -20,6 +21,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
         self.row_num = -1
         self.genShellPhp.triggered.connect(self.gen_shell_php)
         self.tableWidget.customContextMenuRequested.connect(self.generateMenu)
+        self.tableWidget.doubleClicked.connect(self.shellTableDoubleClicked)
 
     def gen_shell_php(self):
         dg = QDialog()
@@ -75,6 +77,17 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
         newItem = QTableWidgetItem(memo)
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         self.tableWidget.setItem(self.index, 4, newItem)
+        self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        self.tableWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        self.tableWidget.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+
+    def shellTableDoubleClicked(self):
+        #计算当前行数
+        self.row_num = -1
+        for i in self.tableWidget.selectionModel().selection().indexes():
+            self.row_num = i.row()
+        self.displayShell()
+
 
     def generateMenu(self, pos):
         menu = QMenu()
@@ -87,6 +100,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             item1 = menu.addAction('打开')
             item2 = menu.addAction('编辑')
             item3 = menu.addAction('删除')
+            item4 = menu.addAction('查看')
             action = menu.exec_(self.tableWidget.mapToGlobal(pos))
 
             if action == item1:
@@ -102,71 +116,136 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                 dg.signal_url_password.connect(self.deal_emit_slot)
 
                 dg.exec()
-            else:
+            elif action == item3:
                 self.tableWidget.removeRow(self.row_num)
+            else:
+                self.displayWeb(self.tableWidget.item(self.row_num, 0).text())
         else:
             item = menu.addAction('新建')
             action = menu.exec_(self.tableWidget.mapToGlobal(pos))
             if action == item:
                 self.add_shell()
 
+    def displayWeb(self, url):
+        self.tab_index += 1
+        self.new_tab = QtWidgets.QWidget()
+        self.new_tab.setObjectName('tab_' + str(self.tab_index))
+
+        self.browser = QWebEngineView()
+        self.browser.load(QtCore.QUrl(url))
+        self.gridLayout = QtWidgets.QGridLayout(self.new_tab)
+        self.gridLayout.addWidget(self.browser, 0, 0)
+        self.tabWidget.addTab(self.new_tab, url)
+        self.xbutton = QtWidgets.QPushButton("x")
+        self.xbutton.setFixedSize(16, 16)
+        self.xbutton.clicked.connect(lambda: self.del_tab(self.tab_index))
+        self.tabWidget.tabBar().setTabButton(self.tab_index, self.tabWidget.tabBar().RightSide, self.xbutton)
+        self.tabWidget.setCurrentIndex(self.tab_index)
+
     def del_tab(self, index):
         self.tabWidget.removeTab(index)
         self.tab_index -= 1
 
+    def generateFileListMenu(self, data, pos):
+        url = data[0]
+        password = data[1]
+        treeWidget = data[2]
+        fileTableWidget = data[3]
+        rdata = data[4]
+        if treeWidget.currentItem() is None:
+            item = data[5]
+        else:
+            item = treeWidget.currentItem()
+        dir = self.parsePath(item, rdata)
+
+        menu = QMenu()
+        #计算当前行数
+        self.row_num = -1
+        for i in fileTableWidget.selectionModel().selection().indexes():
+            self.row_num = i.row()
+
+        if self.row_num != -1:
+            item1 = menu.addAction('下载文件')
+            item2 = menu.addAction('重命名')
+            item3 = menu.addAction('删除文件')
+            item4 = menu.addAction('更改权限')
+            action = menu.exec_(fileTableWidget.mapToGlobal(pos))
+
+            if action == item1:
+                try:
+                    filename = fileTableWidget.item(self.row_num, 0).text()
+                    buffer = downloadFile(url, password, dir + filename)
+                    filename = QtWidgets.QFileDialog.getSaveFileName(self, '保存路径', filename)
+                    with open(filename[0], 'w') as f:
+                        f.write(buffer)
+                    QtWidgets.QMessageBox.about(self, "下载成功！", '文件已保存')
+                except Exception as e:
+                    QtWidgets.QMessageBox.about(self, "下载失败！", str(Exception(e)))
+            elif action == item2:
+                pass
+            elif action == item3:
+                pass
+            else:
+                pass
+        else:
+            item = menu.addAction('上传文件')
+            action = menu.exec_(fileTableWidget.mapToGlobal(pos))
+            if action == item:
+                pass
+
     def displayShell(self):
         try:
-            self.url = self.tableWidget.item(self.row_num, 0).text()
-            self.password = self.tableWidget.item(self.row_num, 2).text()
-            r = TestConn(self.url, self.password)
-            self.data = r.split('\n')
+            url = self.tableWidget.item(self.row_num, 0).text()
+            password = self.tableWidget.item(self.row_num, 2).text()
+            r = TestConn(url, password)
+            rdata = r.split('\n')
             QtWidgets.QMessageBox.about(self, "连接成功！", r)
 
             self.tab_index += 1
             self.new_tab = QtWidgets.QWidget()
             self.new_tab.setObjectName('tab_' + str(self.tab_index))
 
-            self.gridLayout_2 = QtWidgets.QGridLayout(self.new_tab)
-            self.gridLayout_2.setObjectName("gridLayout_2")
-            self.gridLayout = QtWidgets.QGridLayout()
+
+            self.gridLayout = QtWidgets.QGridLayout(self.new_tab)
             self.gridLayout.setObjectName("gridLayout")
-            self.tableWidget_2 = QtWidgets.QTableWidget(self.new_tab)
-            self.tableWidget_2.setObjectName("tableWidget_2")
-            self.tableWidget_2.setColumnCount(4)
-            self.tableWidget_2.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+            fileTableWidget = QtWidgets.QTableWidget(self.new_tab)
+            fileTableWidget.setObjectName("fileTableWidget")
+            fileTableWidget.setColumnCount(4)
+            fileTableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+            fileTableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+
+
 
             item = QtWidgets.QTableWidgetItem()
             item.setText("名称")
-            self.tableWidget_2.setHorizontalHeaderItem(0, item)
+            fileTableWidget.setHorizontalHeaderItem(0, item)
             item = QtWidgets.QTableWidgetItem()
             item.setText("日期")
-            self.tableWidget_2.setHorizontalHeaderItem(1, item)
+            fileTableWidget.setHorizontalHeaderItem(1, item)
             item = QtWidgets.QTableWidgetItem()
             item.setText("大小")
-            self.tableWidget_2.setHorizontalHeaderItem(2, item)
+            fileTableWidget.setHorizontalHeaderItem(2, item)
             item = QtWidgets.QTableWidgetItem()
             item.setText("属性")
-            self.tableWidget_2.setHorizontalHeaderItem(3, item)
+            fileTableWidget.setHorizontalHeaderItem(3, item)
 
-            # 更新tableWidget_2
-            files = scanDir(self.url, self.password, self.data[0] + '/').split('\n')
+            # 更新fileTableWidget
+            files = scanDir(url, password, rdata[0] + '/').split('\n')
             files = list(filter(None, files))
-            self.updataTable(files)
+            self.updataTable(files, fileTableWidget)
 
 
-
-            self.gridLayout.addWidget(self.tableWidget_2, 1, 1, 1, 1)
-            self.treeWidget = QtWidgets.QTreeWidget(self.new_tab)
-            self.treeWidget.setObjectName("treeWidget")
+            treeWidget = QtWidgets.QTreeWidget(self.new_tab)
+            treeWidget.setObjectName("treeWidget")
 
             # tree信息初始化
             # 根节点
-            self.root = QtWidgets.QTreeWidgetItem(self.treeWidget)
-            self.root.setText(0, self.data[1])
+            self.root = QtWidgets.QTreeWidgetItem(treeWidget)
+            self.root.setText(0, rdata[1])
             self.root.setIcon(0, QIcon('D:/Project/Graduation Design/icons/default_folder.svg'))
 
             # 子节点
-            folders = self.data[0][1:].split('/')
+            folders = rdata[0][1:].split('/')
             itemStack = [self.root]
             for i in range(len(folders)):
                 item = QtWidgets.QTreeWidgetItem(itemStack.pop())
@@ -175,25 +254,30 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                 itemStack.append(item)
 
             #更新节点
-            self.treeWidget.clicked.connect(self.updateTree)
+            treeWidget.clicked.connect(lambda:self.updateTree([url, password, treeWidget, fileTableWidget, rdata]))
 
-            self.treeWidget.header().setVisible(False)
-            self.treeWidget.header().setHighlightSections(False)
-            self.treeWidget.expandAll()
-            self.gridLayout.addWidget(self.treeWidget, 1, 0, 1, 1)
+            treeWidget.header().setVisible(False)
+            treeWidget.header().setHighlightSections(False)
+            treeWidget.expandAll()
+
             self.label = QtWidgets.QLabel(self.new_tab)
             self.label.setMaximumSize(QtCore.QSize(91, 61))
             self.label.setTextFormat(QtCore.Qt.RichText)
             self.label.setScaledContents(False)
             self.label.setObjectName("label")
-            self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
+
             self.label_2 = QtWidgets.QLabel(self.new_tab)
             self.label_2.setMaximumSize(QtCore.QSize(91, 61))
             self.label_2.setTextFormat(QtCore.Qt.RichText)
             self.label_2.setScaledContents(False)
             self.label_2.setObjectName("label_2")
-            self.gridLayout.addWidget(self.label_2, 0, 1, 1, 1)
-            self.gridLayout_2.addLayout(self.gridLayout, 0, 0, 1, 1)
+
+            self.gridLayout.addWidget(self.label, 1, 0)
+            self.gridLayout.addWidget(self.label_2, 1, 1)
+            self.gridLayout.addWidget(treeWidget, 2, 0)
+            self.gridLayout.addWidget(fileTableWidget, 2, 1)
+
+
             self.label.setText(
                 "<html><head/><body><p align=\"center\"><span style=\" font-size:16pt; font-weight:600;\">目录列表</span></p></body></html>")
             self.label_2.setText(
@@ -206,14 +290,17 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             self.xbutton.clicked.connect(lambda: self.del_tab(self.tab_index))
             self.tabWidget.tabBar().setTabButton(self.tab_index, self.tabWidget.tabBar().RightSide, self.xbutton)
             self.tabWidget.setCurrentIndex(self.tab_index)
+            fileTableWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+            fileTableWidget.customContextMenuRequested.connect(partial(self.generateFileListMenu, [url, password, treeWidget,
+                                                                                                   fileTableWidget, rdata, item]))
         except Exception as e:
             QtWidgets.QMessageBox.about(self, "连接失败！", str(Exception(e)))
 
-    def updataTable(self, files):
+    def updataTable(self, files, fileTableWidget):
         for i in range(len(files) - 1, -1, -1):
             if (files[i].split('\t'))[0].startswith('./') or (files[i].split('\t'))[0].startswith('../'):
                 files.remove(files[i])
-        self.tableWidget_2.setRowCount(len(files))
+        fileTableWidget.setRowCount(len(files))
         for i in range(len(files)):
             for j in range(4):
                 if j == 2:
@@ -221,34 +308,43 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                 else:
                     newItem = QTableWidgetItem(files[i].split('\t')[j])
                 newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-                self.tableWidget_2.setItem(i, j, newItem)
+                fileTableWidget.setItem(i, j, newItem)
+        fileTableWidget.sortItems(0, QtCore.Qt.AscendingOrder)
 
-    def updateTree(self):
-        item = self.treeWidget.currentItem()
-        if item.text(0) == self.data[1]:
-            dir = self.data[1]
-            if self.data[1] != '/':
+    def parsePath(self, item, rdata):
+        if item.text(0) == rdata[1]:
+            dir = rdata[1]
+            if rdata[1] != '/':
                 dir += '/'
         else:
             dir = '/'
             dir = '/' + item.text(0) + dir
-            while item.parent().text(0) != self.data[1]:
+            while item.parent().text(0) != rdata[1]:
                 item = item.parent()
                 dir = '/' + item.text(0) + dir
-            if self.data[1] != '/':
-                dir = self.data[1] + dir
+            if rdata[1] != '/':
+                dir = rdata[1] + dir
         #print(dir)
+        return dir
+
+    def updateTree(self, data):
+        url = data[0]
+        password = data[1]
+        treeWidget = data[2]
+        fileTableWidget = data[3]
+        rdata = data[4]
+        dir = self.parsePath(treeWidget.currentItem(), rdata)
 
         try:
             # 更新文件列表
-            files = scanDir(self.url, self.password, dir).split('\n')
+            files = scanDir(url, password, dir).split('\n')
             files = list(filter(None, files))
-            self.updataTable(files)
+            self.updataTable(files, fileTableWidget)
 
             # 更新目录列表
             # print(files)
 
-            item = self.treeWidget.currentItem()
+            item = treeWidget.currentItem()
             childL = []
             childCount = item.childCount()
             for i in range(childCount):
@@ -261,18 +357,16 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                 if fs.endswith('/'):
                     fname.append(fs[:-1])
                     if fs[:-1] not in childL:
-                        item = QtWidgets.QTreeWidgetItem(self.treeWidget.currentItem())
+                        item = QtWidgets.QTreeWidgetItem(treeWidget.currentItem())
                         item.setText(0, fs[:-1])
                         item.setIcon(0, QIcon('D:/Project/Graduation Design/icons/default_folder.svg'))
 
-            item = self.treeWidget.currentItem()
+            item = treeWidget.currentItem()
             for i in range(childCount - 1, -1, -1):
                 if item.child(i).text(0) not in fname:
                     item.removeChild(item.child(i))
         except Exception as e:
             QtWidgets.QMessageBox.about(self, "连接失败！", str(Exception(e)))
-
-
 
 
 

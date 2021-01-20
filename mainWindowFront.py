@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(800, 600)
+        MainWindow.resize(960, 720)
         MainWindow.setMinimumSize(QtCore.QSize(800, 600))
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("C:/Users/r1ngs/Pictures/file_type_latino.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -62,8 +62,7 @@ class Ui_MainWindow(object):
         self.tableWidget.setHorizontalHeaderItem(3, item)
         item = QtWidgets.QTableWidgetItem()
         self.tableWidget.setHorizontalHeaderItem(4, item)
-        self.tableWidget.horizontalHeader().setDefaultSectionSize(157)
-        self.tableWidget.horizontalHeader().setMinimumSectionSize(23)
+        self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.tableWidget.verticalHeader().setVisible(False)
         self.horizontalLayout_2.addWidget(self.tableWidget)
         self.tabWidget.addTab(self.tab, "")

