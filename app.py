@@ -9,8 +9,9 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from qqwry import QQwry
 from functools import partial
-from testConnShell import TestConn, scanDir, dns_resolver, formatFileSize, downloadFile
+from testConnShell import *
 import mainWindowFront, addShell, genShellPhp
+import os
 
 class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
     def __init__(self):
@@ -20,8 +21,8 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
         self.tab_index = 0
         self.row_num = -1
         self.genShellPhp.triggered.connect(self.gen_shell_php)
-        self.tableWidget.customContextMenuRequested.connect(self.generateMenu)
-        self.tableWidget.doubleClicked.connect(self.shellTableDoubleClicked)
+        self.shellTableWidget.customContextMenuRequested.connect(self.generateMenu)
+        self.shellTableWidget.doubleClicked.connect(self.shellTableDoubleClicked)
 
     def gen_shell_php(self):
         dg = QDialog()
@@ -40,26 +41,26 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
         password = data[1]
         memo = data[2]
         if self.row_num == -1:
-            self.index = self.tableWidget.rowCount()
-            self.tableWidget.setRowCount(self.index + 1)
+            self.index = self.shellTableWidget.rowCount()
+            self.shellTableWidget.setRowCount(self.index + 1)
         else:
             self.index = self.row_num
 
         #添加URL
         newItem = QTableWidgetItem(url)
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-        self.tableWidget.setItem(self.index, 0, newItem)
+        self.shellTableWidget.setItem(self.index, 0, newItem)
 
         #添加IP
         ip= dns_resolver(url)
         newItem = QTableWidgetItem(ip)
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-        self.tableWidget.setItem(self.index, 1, newItem)
+        self.shellTableWidget.setItem(self.index, 1, newItem)
 
         #添加密码
         newItem = QTableWidgetItem(password)
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-        self.tableWidget.setItem(self.index, 2, newItem)
+        self.shellTableWidget.setItem(self.index, 2, newItem)
 
         #添加物理地址
         q = QQwry()
@@ -71,20 +72,20 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             addr = ''
         newItem = QTableWidgetItem(addr)
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-        self.tableWidget.setItem(self.index, 3, newItem)
+        self.shellTableWidget.setItem(self.index, 3, newItem)
 
         #添加备注
         newItem = QTableWidgetItem(memo)
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-        self.tableWidget.setItem(self.index, 4, newItem)
-        self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-        self.tableWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
-        self.tableWidget.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+        self.shellTableWidget.setItem(self.index, 4, newItem)
+        self.shellTableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        self.shellTableWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        self.shellTableWidget.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
 
     def shellTableDoubleClicked(self):
         #计算当前行数
         self.row_num = -1
-        for i in self.tableWidget.selectionModel().selection().indexes():
+        for i in self.shellTableWidget.selectionModel().selection().indexes():
             self.row_num = i.row()
         self.displayShell()
 
@@ -93,7 +94,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
         menu = QMenu()
         #计算当前行数
         self.row_num = -1
-        for i in self.tableWidget.selectionModel().selection().indexes():
+        for i in self.shellTableWidget.selectionModel().selection().indexes():
             self.row_num = i.row()
 
         if self.row_num != -1:
@@ -101,7 +102,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             item2 = menu.addAction('编辑')
             item3 = menu.addAction('删除')
             item4 = menu.addAction('查看')
-            action = menu.exec_(self.tableWidget.mapToGlobal(pos))
+            action = menu.exec_(self.shellTableWidget.mapToGlobal(pos))
 
             if action == item1:
                 self.displayShell()
@@ -110,19 +111,19 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                 dg = addShell.Ui_dialog()
                 dg.pushButton.setText("保存")
 
-                dg.lineEdit.setText(self.tableWidget.item(self.row_num, 0).text())
-                dg.lineEdit_2.setText(self.tableWidget.item(self.row_num, 2).text())
-                dg.lineEdit_3.setText(self.tableWidget.item(self.row_num, 4).text())
+                dg.lineEdit.setText(self.shellTableWidget.item(self.row_num, 0).text())
+                dg.lineEdit_2.setText(self.shellTableWidget.item(self.row_num, 2).text())
+                dg.lineEdit_3.setText(self.shellTableWidget.item(self.row_num, 4).text())
                 dg.signal_url_password.connect(self.deal_emit_slot)
 
                 dg.exec()
             elif action == item3:
-                self.tableWidget.removeRow(self.row_num)
+                self.shellTableWidget.removeRow(self.row_num)
             else:
-                self.displayWeb(self.tableWidget.item(self.row_num, 0).text())
+                self.displayWeb(self.shellTableWidget.item(self.row_num, 0).text())
         else:
             item = menu.addAction('新建')
-            action = menu.exec_(self.tableWidget.mapToGlobal(pos))
+            action = menu.exec_(self.shellTableWidget.mapToGlobal(pos))
             if action == item:
                 self.add_shell()
 
@@ -156,6 +157,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             item = data[5]
         else:
             item = treeWidget.currentItem()
+        # 当前选择文件的目录
         dir = self.parsePath(item, rdata)
 
         menu = QMenu()
@@ -175,8 +177,8 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                 try:
                     filename = fileTableWidget.item(self.row_num, 0).text()
                     buffer = downloadFile(url, password, dir + filename)
-                    filename = QtWidgets.QFileDialog.getSaveFileName(self, '保存路径', filename)
-                    with open(filename[0], 'w') as f:
+                    file = QtWidgets.QFileDialog.getSaveFileName(self, '保存路径', filename)
+                    with open(file[0], 'w', encoding='utf-8') as f:
                         f.write(buffer)
                     QtWidgets.QMessageBox.about(self, "下载成功！", '文件已保存')
                 except Exception as e:
@@ -191,12 +193,27 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             item = menu.addAction('上传文件')
             action = menu.exec_(fileTableWidget.mapToGlobal(pos))
             if action == item:
-                pass
+                try:
+                    filePath= QtWidgets.QFileDialog.getOpenFileName(self, '选择文件')
+                    with open(filePath[0], encoding='utf-8') as f:
+                        buffer = f.read()
+                    r = uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]))
+                    if r == '1':
+                        QtWidgets.QMessageBox.about(self, "上传成功！", '文件已上传')
+                        # 更新文件目录
+                        files = scanDir(url, password, dir + '/').split('\n')
+                        files = list(filter(None, files))
+                        self.updataTable(files, fileTableWidget)
+                    else:
+                        QtWidgets.QMessageBox.about(self, "上传失败！", '可能没有权限')
+
+                except Exception as e:
+                    QtWidgets.QMessageBox.about(self, "上传失败！", str(Exception(e)))
 
     def displayShell(self):
         try:
-            url = self.tableWidget.item(self.row_num, 0).text()
-            password = self.tableWidget.item(self.row_num, 2).text()
+            url = self.shellTableWidget.item(self.row_num, 0).text()
+            password = self.shellTableWidget.item(self.row_num, 2).text()
             r = TestConn(url, password)
             rdata = r.split('\n')
             QtWidgets.QMessageBox.about(self, "连接成功！", r)
@@ -283,7 +300,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             self.label_2.setText(
                 "<html><head/><body><p align=\"center\"><span style=\" font-size:16pt; font-weight:600;\">文件列表</span></p></body></html>")
 
-            self.tabWidget.addTab(self.new_tab, self.tableWidget.item(self.row_num, 1).text())
+            self.tabWidget.addTab(self.new_tab, self.shellTableWidget.item(self.row_num, 1).text())
             self.horizontalLayout.addWidget(self.tabWidget)
             self.xbutton = QtWidgets.QPushButton("x")
             self.xbutton.setFixedSize(16, 16)
