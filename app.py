@@ -11,7 +11,7 @@ from qqwry import QQwry
 from functools import partial
 from testConnShell import *
 import mainWindowFront, addShell, genShellPhp
-import os
+import os, time, json
 
 class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
     def __init__(self):
@@ -20,9 +20,68 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
         self.setupUi(self)
         self.tab_index = 0
         self.row_num = -1
+        self.index = -1
+        self.init_table()
         self.genShellPhp.triggered.connect(self.gen_shell_php)
         self.shellTableWidget.customContextMenuRequested.connect(self.generateMenu)
         self.shellTableWidget.doubleClicked.connect(self.shellTableDoubleClicked)
+
+    def init_table(self):
+        current_path = os.path.dirname(__file__)
+        with open(current_path + "/cache/db.json", "r") as f:
+            d = json.load(f)
+            for index, data in d.items():
+                self.shellTableWidget.setRowCount(int(index) + 1)
+                # 添加URL
+                newItem = QTableWidgetItem(data["URL链接"])
+                newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                self.shellTableWidget.setItem(int(index), 0, newItem)
+
+                # 添加IP
+                newItem = QTableWidgetItem(data["IP地址"])
+                newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                self.shellTableWidget.setItem(int(index), 1, newItem)
+
+                # 添加密码
+                newItem = QTableWidgetItem(data["密码"])
+                newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                self.shellTableWidget.setItem(int(index), 2, newItem)
+
+                # 添加物理地址
+                newItem = QTableWidgetItem(data["物理位置"])
+                newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                self.shellTableWidget.setItem(int(index), 3, newItem)
+
+                # 添加备注
+                newItem = QTableWidgetItem(data["网站备注"])
+                newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                self.shellTableWidget.setItem(int(index), 4, newItem)
+
+                # 添加时间
+                newItem = QTableWidgetItem(data["修改时间"])
+                newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                self.shellTableWidget.setItem(int(index), 5, newItem)
+
+        self.shellTableWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        self.shellTableWidget.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+    def closeEvent(self, Event):
+        if self.index != -1:
+            js = {}
+            current_path = os.path.dirname(__file__)
+            for i in range(self.index + 1):
+                data = {}
+                data["URL链接"] = self.shellTableWidget.item(i, 0).text()
+                data["IP地址"] = self.shellTableWidget.item(i, 1).text()
+                data["密码"] = self.shellTableWidget.item(i, 2).text()
+                data["物理位置"] = self.shellTableWidget.item(i, 3).text()
+                data["网站备注"] = self.shellTableWidget.item(i, 4).text()
+                data["修改时间"] = self.shellTableWidget.item(i, 5).text()
+                js[i] = data
+
+            with open(current_path + "/cache/db.json", "w") as f:
+                json.dump(js, f)
+                #print("加载入文件完成...")
+        Event.accept()
 
     def gen_shell_php(self):
         dg = QDialog()
@@ -78,6 +137,11 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
         newItem = QTableWidgetItem(memo)
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         self.shellTableWidget.setItem(self.index, 4, newItem)
+        # 添加时间
+        newItem = QTableWidgetItem(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+        newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        self.shellTableWidget.setItem(self.index, 5, newItem)
+
         self.shellTableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.shellTableWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         self.shellTableWidget.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
@@ -185,6 +249,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                     QtWidgets.QMessageBox.about(self, "下载失败！", str(Exception(e)))
             elif action == item2:
                 pass
+                # TODO 加一个刷新目录功能
             elif action == item3:
                 pass
             else:
