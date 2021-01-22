@@ -123,6 +123,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
 
         #添加物理地址
         q = QQwry()
+        # TODO 改成相对路径
         q.load_file('D:\Project\Graduation Design\qqwry.dat')
         try:
             res = q.lookup(ip)
@@ -183,7 +184,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                 dg.exec()
             elif action == item3:
                 self.shellTableWidget.removeRow(self.row_num)
-            else:
+            elif action == item4:
                 self.displayWeb(self.shellTableWidget.item(self.row_num, 0).text())
         else:
             item = menu.addAction('新建')
@@ -248,16 +249,58 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                 except Exception as e:
                     QtWidgets.QMessageBox.about(self, "下载失败！", str(Exception(e)))
             elif action == item2:
-                pass
-                # TODO 加一个刷新目录功能
+                try:
+                    rfilename = fileTableWidget.item(self.row_num, 0).text()
+                    dfilename, ok = QtWidgets.QInputDialog.getText(self, '重命名', '更改后的文件名：')
+                    if ok:
+                        if renameFile(url, password, dir + rfilename, dir + dfilename) == '1':
+                            QtWidgets.QMessageBox.about(self, "重命名成功！", '文件已重命名')
+                        else:
+                            QtWidgets.QMessageBox.about(self, "重命名失败！", '可能没有权限')
+                        # 更新文件目录
+                        files = scanDir(url, password, dir).split('\n')
+                        files = list(filter(None, files))
+                        self.updataTable(files, fileTableWidget)
+                except Exception as e:
+                    QtWidgets.QMessageBox.about(self, "重命名失败！", str(Exception(e)))
             elif action == item3:
-                pass
-            else:
-                pass
+                try:
+                    file = fileTableWidget.item(self.row_num, 0).text()
+                    reply = QtWidgets.QMessageBox.question(self, '删除文件', "确定要删除该文件吗？", QtWidgets.QMessageBox.Yes
+                                                           | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
+                    if reply == QtWidgets.QMessageBox.Yes:
+                        if deleteFile(url, password, dir + file) == '1':
+                            QtWidgets.QMessageBox.about(self, "删除成功！", '文件已删除')
+                        else:
+                            QtWidgets.QMessageBox.about(self, "删除失败！", '可能没有权限')
+                        # 更新文件目录
+                        files = scanDir(url, password, dir).split('\n')
+                        files = list(filter(None, files))
+                        self.updataTable(files, fileTableWidget)
+                except Exception as e:
+                    QtWidgets.QMessageBox.about(self, "删除文件失败！", str(Exception(e)))
+            elif action == item4:
+                try:
+                    # TODO 做输入检测
+                    file = fileTableWidget.item(self.row_num, 0).text()
+                    rmode = fileTableWidget.item(self.row_num, 3).text()
+                    nmode, ok = QtWidgets.QInputDialog.getText(self, '更改权限', '更改为：', text = rmode)
+                    if ok:
+                        if chmodFile(url, password, dir + file, nmode) == '1':
+                            QtWidgets.QMessageBox.about(self, "更改成功！", '权限已经更改')
+                        else:
+                            QtWidgets.QMessageBox.about(self, "更改失败！", '更改权限失败！')
+                        # 更新文件目录
+                        files = scanDir(url, password, dir).split('\n')
+                        files = list(filter(None, files))
+                        self.updataTable(files, fileTableWidget)
+                except Exception as e:
+                    QtWidgets.QMessageBox.about(self, "更改权限失败！", str(Exception(e)))
         else:
-            item = menu.addAction('上传文件')
+            item11 = menu.addAction('上传文件')
+            item12 = menu.addAction('刷新目录')
             action = menu.exec_(fileTableWidget.mapToGlobal(pos))
-            if action == item:
+            if action == item11:
                 try:
                     filePath= QtWidgets.QFileDialog.getOpenFileName(self, '选择文件')
                     with open(filePath[0], encoding='utf-8') as f:
@@ -266,7 +309,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                     if r == '1':
                         QtWidgets.QMessageBox.about(self, "上传成功！", '文件已上传')
                         # 更新文件目录
-                        files = scanDir(url, password, dir + '/').split('\n')
+                        files = scanDir(url, password, dir).split('\n')
                         files = list(filter(None, files))
                         self.updataTable(files, fileTableWidget)
                     else:
@@ -274,6 +317,11 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
 
                 except Exception as e:
                     QtWidgets.QMessageBox.about(self, "上传失败！", str(Exception(e)))
+            elif action == item12 :
+                # 更新文件目录
+                files = scanDir(url, password, dir).split('\n')
+                files = list(filter(None, files))
+                self.updataTable(files, fileTableWidget)
 
     def displayShell(self):
         try:
