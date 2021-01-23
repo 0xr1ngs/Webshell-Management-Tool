@@ -9,7 +9,7 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+import os, sys
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -17,7 +17,7 @@ class Ui_MainWindow(object):
         MainWindow.resize(960, 720)
         MainWindow.setMinimumSize(QtCore.QSize(800, 600))
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("C:/Users/r1ngs/Pictures/file_type_latino.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/file_type_latino.svg'), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
         MainWindow.setToolTipDuration(0)
         self.centralwidget = QtWidgets.QWidget(MainWindow)

@@ -11,7 +11,7 @@ from qqwry import QQwry
 from functools import partial
 from testConnShell import *
 import mainWindowFront, addShell, genShellPhp
-import os, time, json
+import os, time, json, re
 
 class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
     def __init__(self):
@@ -27,7 +27,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
         self.shellTableWidget.doubleClicked.connect(self.shellTableDoubleClicked)
 
     def init_table(self):
-        current_path = os.path.dirname(__file__)
+        current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
         with open(current_path + "/cache/db.json", "r") as f:
             d = json.load(f)
             for index, data in d.items():
@@ -67,7 +67,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
     def closeEvent(self, Event):
         if self.index != -1:
             js = {}
-            current_path = os.path.dirname(__file__)
+            current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
             for i in range(self.index + 1):
                 data = {}
                 data["URL链接"] = self.shellTableWidget.item(i, 0).text()
@@ -123,8 +123,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
 
         #添加物理地址
         q = QQwry()
-        # TODO 改成相对路径
-        q.load_file('D:\Project\Graduation Design\qqwry.dat')
+        q.load_file(os.path.dirname(__file__) + '/qqwry.dat')
         try:
             res = q.lookup(ip)
             addr = res[0] + ' ' + res[1]
@@ -243,9 +242,10 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                     filename = fileTableWidget.item(self.row_num, 0).text()
                     buffer = downloadFile(url, password, dir + filename)
                     file = QtWidgets.QFileDialog.getSaveFileName(self, '保存路径', filename)
-                    with open(file[0], 'w', encoding='utf-8') as f:
-                        f.write(buffer)
-                    QtWidgets.QMessageBox.about(self, "下载成功！", '文件已保存')
+                    if file[0] != '':
+                        with open(file[0], 'w', encoding='utf-8') as f:
+                            f.write(buffer)
+                        QtWidgets.QMessageBox.about(self, "下载成功！", '文件已保存')
                 except Exception as e:
                     QtWidgets.QMessageBox.about(self, "下载失败！", str(Exception(e)))
             elif action == item2:
@@ -281,11 +281,13 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                     QtWidgets.QMessageBox.about(self, "删除文件失败！", str(Exception(e)))
             elif action == item4:
                 try:
-                    # TODO 做输入检测
                     file = fileTableWidget.item(self.row_num, 0).text()
                     rmode = fileTableWidget.item(self.row_num, 3).text()
                     nmode, ok = QtWidgets.QInputDialog.getText(self, '更改权限', '更改为：', text = rmode)
                     if ok:
+                        searchObj = re.search( '^0[0-7][0-7][0-7]$', nmode)
+                        if searchObj is None:
+                            raise Exception('输入不合法')
                         if chmodFile(url, password, dir + file, nmode) == '1':
                             QtWidgets.QMessageBox.about(self, "更改成功！", '权限已经更改')
                         else:
@@ -303,17 +305,18 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             if action == item11:
                 try:
                     filePath= QtWidgets.QFileDialog.getOpenFileName(self, '选择文件')
-                    with open(filePath[0], encoding='utf-8') as f:
-                        buffer = f.read()
-                    r = uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]))
-                    if r == '1':
-                        QtWidgets.QMessageBox.about(self, "上传成功！", '文件已上传')
-                        # 更新文件目录
-                        files = scanDir(url, password, dir).split('\n')
-                        files = list(filter(None, files))
-                        self.updataTable(files, fileTableWidget)
-                    else:
-                        QtWidgets.QMessageBox.about(self, "上传失败！", '可能没有权限')
+                    if filePath[0] != '':
+                        with open(filePath[0], encoding='utf-8') as f:
+                            buffer = f.read()
+                        r = uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]))
+                        if r == '1':
+                            QtWidgets.QMessageBox.about(self, "上传成功！", '文件已上传')
+                            # 更新文件目录
+                            files = scanDir(url, password, dir).split('\n')
+                            files = list(filter(None, files))
+                            self.updataTable(files, fileTableWidget)
+                        else:
+                            QtWidgets.QMessageBox.about(self, "上传失败！", '可能没有权限')
 
                 except Exception as e:
                     QtWidgets.QMessageBox.about(self, "上传失败！", str(Exception(e)))
@@ -371,16 +374,36 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             # tree信息初始化
             # 根节点
             self.root = QtWidgets.QTreeWidgetItem(treeWidget)
-            self.root.setText(0, rdata[1])
-            self.root.setIcon(0, QIcon('D:/Project/Graduation Design/icons/default_folder.svg'))
+            if not rdata[1].endswith(':'):
+                self.root.setText(0, rdata[1])
+                self.root.setIcon(0,
+                                  QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder.svg'))
+            else:
+                #处理windows路径
+                r = rdata[1].split(':')[:-1]
+                for i in r:
+                    if i == rdata[0][0]:
+                        self.root.setText(0, i+':/')
+                        self.root.setIcon(0, QIcon(
+                            os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder.svg'))
+                    else:
+                        root = QtWidgets.QTreeWidgetItem(treeWidget)
+                        root.setText(0, i + ':/')
+                        root.setIcon(0, QIcon(
+                            os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder.svg'))
+
 
             # 子节点
-            folders = rdata[0][1:].split('/')
+            if rdata[0][1] != ':':
+                folders = rdata[0][1:].split('/')
+            else:
+                #处理windows
+                folders = rdata[0][3:].split('/')
             itemStack = [self.root]
             for i in range(len(folders)):
                 item = QtWidgets.QTreeWidgetItem(itemStack.pop())
                 item.setText(0, folders[i])
-                item.setIcon(0, QIcon('D:/Project/Graduation Design/icons/default_folder.svg'))
+                item.setIcon(0, QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder.svg'))
                 itemStack.append(item)
 
             #更新节点
@@ -434,7 +457,10 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
         for i in range(len(files)):
             for j in range(4):
                 if j == 2:
-                    newItem = QTableWidgetItem(formatFileSize(int(files[i].split('\t')[j]), 2))
+                    try:
+                        newItem = QTableWidgetItem(formatFileSize(int(files[i].split('\t')[j]), 2))
+                    except:
+                        newItem = QTableWidgetItem(files[i].split('\t')[j])
                 else:
                     newItem = QTableWidgetItem(files[i].split('\t')[j])
                 newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
@@ -442,21 +468,34 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
         fileTableWidget.sortItems(0, QtCore.Qt.AscendingOrder)
 
     def parsePath(self, item, rdata):
-        if item.text(0) == rdata[1]:
-            dir = rdata[1]
-            if rdata[1] != '/':
-                dir += '/'
-        else:
-            dir = '/'
-            dir = '/' + item.text(0) + dir
-            while item.parent().text(0) != rdata[1]:
-                item = item.parent()
+        if not rdata[1].endswith(':'):
+            # linux
+            # 是否为根目录
+            if item.text(0) == rdata[1]:
+                dir = rdata[1]
+            else:
+                dir = '/'
                 dir = '/' + item.text(0) + dir
-            if rdata[1] != '/':
-                dir = rdata[1] + dir
-        #print(dir)
-        return dir
+                while item.parent().text(0) != rdata[1]:
+                    item = item.parent()
+                    dir = '/' + item.text(0) + dir
+            #print(dir)
+            return dir
 
+        else:
+            # windows
+            if item.text(0).endswith(':/'):
+                dir = item.text(0)
+            else:
+                dir = '/'
+                dir = '/' + item.text(0) + dir
+                while not item.parent().text(0).endswith(':/'):
+                    item = item.parent()
+                    dir = '/' + item.text(0) + dir
+                item = item.parent()
+                dir = item.text(0)[:2] + dir
+            #print(dir)
+            return dir
     def updateTree(self, data):
         url = data[0]
         password = data[1]
@@ -489,7 +528,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                     if fs[:-1] not in childL:
                         item = QtWidgets.QTreeWidgetItem(treeWidget.currentItem())
                         item.setText(0, fs[:-1])
-                        item.setIcon(0, QIcon('D:/Project/Graduation Design/icons/default_folder.svg'))
+                        item.setIcon(0, QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder.svg'))
 
             item = treeWidget.currentItem()
             for i in range(childCount - 1, -1, -1):
