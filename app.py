@@ -560,7 +560,6 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
 
             # 更新目录列表
             # print(files)
-
             item = treeWidget.currentItem()
             childL = []
             childCount = item.childCount()
