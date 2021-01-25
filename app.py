@@ -233,17 +233,137 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
 
         if self.row_num != -1:
             if fileTableWidget.item(self.row_num, 0).text().endswith('/'):
-                # 文件夹
-                pass
-            else:
-                # 文件
-                item1 = menu.addAction('下载文件')
-                item2 = menu.addAction('重命名')
-                item3 = menu.addAction('删除文件')
-                item4 = menu.addAction('更改权限')
+                item0 = menu.addAction('上传文件')
+                item0.setIcon(
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/upload_easyicon.svg'))
+                item1 = menu.addAction('重命名')
+                item1.setIcon(
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/filename_easyicon.svg'))
+                item2 = menu.addAction('删除文件')
+                item2.setIcon(
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/delete_easyicon.svg'))
+                item3 = menu.addAction('更改权限')
+                item3.setIcon(
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/management_easyicon.svg'))
+                item4 = menu.addAction('刷新目录')
+                item4.setIcon(
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/refresh_easyicon.svg'))
                 action = menu.exec_(fileTableWidget.mapToGlobal(pos))
 
-                if action == item1:
+                if action == item0:
+                    try:
+                        filePath = QtWidgets.QFileDialog.getOpenFileName(self, '选择文件')
+                        if filePath[0] != '':
+                            with open(filePath[0], encoding='utf-8') as f:
+                                buffer = f.read()
+                            r = uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]))
+                            if r == '1':
+                                QtWidgets.QMessageBox.about(self, "上传成功！", '文件已上传')
+                                # 更新文件目录
+                                files = scanDir(url, password, dir).split('\n')
+                                files = list(filter(None, files))
+                                self.updataTable(files, fileTableWidget)
+                            else:
+                                QtWidgets.QMessageBox.about(self, "上传失败！", '可能没有权限')
+
+                    except Exception as e:
+                        QtWidgets.QMessageBox.about(self, "上传失败！", str(Exception(e)))
+                elif action == item1:
+                    try:
+                        rfilename = fileTableWidget.item(self.row_num, 0).text()
+                        dfilename, ok = QtWidgets.QInputDialog.getText(self, '重命名', '更改后的文件名：', text = rfilename)
+                        if ok:
+                            if renameFile(url, password, dir + rfilename, dir + dfilename) == '1':
+                                QtWidgets.QMessageBox.about(self, "重命名成功！", '文件已重命名')
+                            else:
+                                QtWidgets.QMessageBox.about(self, "重命名失败！", '可能没有权限')
+                            # 更新文件目录
+                            files = scanDir(url, password, dir).split('\n')
+                            files = list(filter(None, files))
+                            self.updataTable(files, fileTableWidget)
+                    except Exception as e:
+                        QtWidgets.QMessageBox.about(self, "重命名失败！", str(Exception(e)))
+                elif action == item2:
+                    try:
+                        file = fileTableWidget.item(self.row_num, 0).text()
+                        reply = QtWidgets.QMessageBox.question(self, '删除文件', "确定要删除该文件吗？", QtWidgets.QMessageBox.Yes
+                                                               | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
+                        if reply == QtWidgets.QMessageBox.Yes:
+                            if deleteFile(url, password, dir + file) == '1':
+                                QtWidgets.QMessageBox.about(self, "删除成功！", '文件已删除')
+                            else:
+                                QtWidgets.QMessageBox.about(self, "删除失败！", '可能没有权限')
+                            # 更新文件目录
+                            files = scanDir(url, password, dir).split('\n')
+                            files = list(filter(None, files))
+                            self.updataTable(files, fileTableWidget)
+                    except Exception as e:
+                        QtWidgets.QMessageBox.about(self, "删除文件失败！", str(Exception(e)))
+                elif action == item3:
+                    try:
+                        file = fileTableWidget.item(self.row_num, 0).text()
+                        rmode = fileTableWidget.item(self.row_num, 3).text()
+                        nmode, ok = QtWidgets.QInputDialog.getText(self, '更改权限', '更改为：', text = rmode)
+                        if ok:
+                            searchObj = re.search( '^0[0-7][0-7][0-7]$', nmode)
+                            if searchObj is None:
+                                raise Exception('输入不合法')
+                            if chmodFile(url, password, dir + file, nmode) == '1':
+                                QtWidgets.QMessageBox.about(self, "更改成功！", '权限已经更改')
+                            else:
+                                QtWidgets.QMessageBox.about(self, "更改失败！", '更改权限失败！')
+                            # 更新文件目录
+                            files = scanDir(url, password, dir).split('\n')
+                            files = list(filter(None, files))
+                            self.updataTable(files, fileTableWidget)
+                    except Exception as e:
+                        QtWidgets.QMessageBox.about(self, "更改权限失败！", str(Exception(e)))
+                elif action == item4:
+                    # 更新文件目录
+                    files = scanDir(url, password, dir).split('\n')
+                    files = list(filter(None, files))
+                    self.updataTable(files, fileTableWidget)
+            else:
+                # 文件
+                item0 = menu.addAction('上传文件')
+                item0.setIcon(
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/upload_easyicon.svg'))
+                item1 = menu.addAction('下载文件')
+                item1.setIcon(
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/download_easyicon.svg'))
+                item2 = menu.addAction('重命名')
+                item2.setIcon(
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/filename_easyicon.svg'))
+                item3 = menu.addAction('删除文件')
+                item3.setIcon(
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/delete_easyicon.svg'))
+                item4 = menu.addAction('更改权限')
+                item4.setIcon(
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/management_easyicon.svg'))
+                item5 = menu.addAction('刷新目录')
+                item5.setIcon(
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/refresh_easyicon.svg'))
+                action = menu.exec_(fileTableWidget.mapToGlobal(pos))
+
+                if action == item0:
+                    try:
+                        filePath = QtWidgets.QFileDialog.getOpenFileName(self, '选择文件')
+                        if filePath[0] != '':
+                            with open(filePath[0], encoding='utf-8') as f:
+                                buffer = f.read()
+                            r = uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]))
+                            if r == '1':
+                                QtWidgets.QMessageBox.about(self, "上传成功！", '文件已上传')
+                                # 更新文件目录
+                                files = scanDir(url, password, dir).split('\n')
+                                files = list(filter(None, files))
+                                self.updataTable(files, fileTableWidget)
+                            else:
+                                QtWidgets.QMessageBox.about(self, "上传失败！", '可能没有权限')
+
+                    except Exception as e:
+                        QtWidgets.QMessageBox.about(self, "上传失败！", str(Exception(e)))
+                elif action == item1:
                     try:
                         filename = fileTableWidget.item(self.row_num, 0).text()
                         buffer = downloadFile(url, password, dir + filename)
@@ -257,7 +377,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                 elif action == item2:
                     try:
                         rfilename = fileTableWidget.item(self.row_num, 0).text()
-                        dfilename, ok = QtWidgets.QInputDialog.getText(self, '重命名', '更改后的文件名：')
+                        dfilename, ok = QtWidgets.QInputDialog.getText(self, '重命名', '更改后的文件名：', text = rfilename)
                         if ok:
                             if renameFile(url, password, dir + rfilename, dir + dfilename) == '1':
                                 QtWidgets.QMessageBox.about(self, "重命名成功！", '文件已重命名')
@@ -304,11 +424,20 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                             self.updataTable(files, fileTableWidget)
                     except Exception as e:
                         QtWidgets.QMessageBox.about(self, "更改权限失败！", str(Exception(e)))
+                elif action == item5:
+                    # 更新文件目录
+                    files = scanDir(url, password, dir).split('\n')
+                    files = list(filter(None, files))
+                    self.updataTable(files, fileTableWidget)
         else:
-            item11 = menu.addAction('上传文件')
-            item12 = menu.addAction('刷新目录')
+            item1 = menu.addAction('上传文件')
+            item1.setIcon(
+                QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/upload_easyicon.svg'))
+            item2 = menu.addAction('刷新目录')
+            item2.setIcon(
+                QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/refresh_easyicon.svg'))
             action = menu.exec_(fileTableWidget.mapToGlobal(pos))
-            if action == item11:
+            if action == item1:
                 try:
                     filePath= QtWidgets.QFileDialog.getOpenFileName(self, '选择文件')
                     if filePath[0] != '':
@@ -326,11 +455,37 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
 
                 except Exception as e:
                     QtWidgets.QMessageBox.about(self, "上传失败！", str(Exception(e)))
-            elif action == item12 :
+            elif action == item2 :
                 # 更新文件目录
                 files = scanDir(url, password, dir).split('\n')
                 files = list(filter(None, files))
                 self.updataTable(files, fileTableWidget)
+
+    def fileTableDoubleClicked(self, data):
+        url = data[0]
+        password = data[1]
+        treeWidget = data[2]
+        fileTableWidget = data[3]
+        rdata = data[4]
+        if treeWidget.currentItem() is None:
+            item = data[5]
+        else:
+            item = treeWidget.currentItem()
+
+        #print(item.text(0))
+
+        #计算当前行数
+        row_num = -1
+        for i in fileTableWidget.selectionModel().selection().indexes():
+            row_num = i.row()
+
+        if fileTableWidget.item(row_num, 0).text().endswith('/'):
+            temp = fileTableWidget.item(row_num, 0).text()[:-1]
+            for i in range(item.childCount()):
+                if item.child(i).text(0) == temp:
+                    self.updateTree([url, password, treeWidget, fileTableWidget, rdata, 1, item.child(i)])
+        else:
+            pass# TODO 文件打开的处理（二进制和文本文件，淦）
 
     def displayShell(self):
         try:
@@ -367,6 +522,8 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             item = QtWidgets.QTableWidgetItem()
             item.setText("属性")
             fileTableWidget.setHorizontalHeaderItem(3, item)
+            fileTableWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Interactive)
+            fileTableWidget.setColumnWidth(0, 200)
 
             # 更新fileTableWidget
             files = scanDir(url, password, rdata[0] + '/').split('\n')
@@ -419,10 +576,12 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                 itemStack.append(item)
 
             # 更新节点
-            treeWidget.clicked.connect(lambda:self.updateTree([url, password, treeWidget, fileTableWidget, rdata]))
+            self.updateTree([url, password, treeWidget, fileTableWidget, rdata, 1, item])
+            treeWidget.clicked.connect(lambda:self.updateTree([url, password, treeWidget, fileTableWidget, rdata, 0]))
             # 处理展开的Icon
             treeWidget.itemExpanded.connect(self.treeExpaned)
             treeWidget.itemCollapsed.connect(self.treeCollapsed)
+
 
             treeWidget.header().setVisible(False)
             treeWidget.header().setHighlightSections(False)
@@ -444,7 +603,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             self.gridLayout.addWidget(self.label_2, 1, 1)
             self.gridLayout.addWidget(treeWidget, 2, 0)
             self.gridLayout.addWidget(fileTableWidget, 2, 1)
-            #调整比例
+            # 调整比例
             self.gridLayout.setColumnStretch(0, 1)
             self.gridLayout.setColumnStretch(1, 2)
 
@@ -461,8 +620,13 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             self.xbutton.clicked.connect(lambda: self.del_tab(self.tab_index))
             self.tabWidget.tabBar().setTabButton(self.tab_index, self.tabWidget.tabBar().RightSide, self.xbutton)
             self.tabWidget.setCurrentIndex(self.tab_index)
+
+            # 右键菜单
             fileTableWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
             fileTableWidget.customContextMenuRequested.connect(partial(self.generateFileListMenu, [url, password, treeWidget,
+                                                                                                   fileTableWidget, rdata, item]))
+            # 双击事件
+            fileTableWidget.doubleClicked.connect(partial(self.fileTableDoubleClicked, [url, password, treeWidget,
                                                                                                    fileTableWidget, rdata, item]))
         except Exception as e:
             QtWidgets.QMessageBox.about(self, "连接失败！", str(Exception(e)))
@@ -550,7 +714,14 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
         treeWidget = data[2]
         fileTableWidget = data[3]
         rdata = data[4]
-        dir = self.parsePath(treeWidget.currentItem(), rdata)
+        doubleClicked = data[5]
+        if doubleClicked:
+            citem = data[6]
+            current_item = citem
+            treeWidget.setCurrentItem(current_item)
+        else:
+            current_item = treeWidget.currentItem()
+        dir = self.parsePath(current_item, rdata)
 
         try:
             # 更新文件列表
@@ -561,7 +732,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             # 更新目录列表
             # print(files)
 
-            item = treeWidget.currentItem()
+            item = current_item
             childL = []
             childCount = item.childCount()
             for i in range(childCount):
@@ -574,18 +745,23 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                 if fs.endswith('/'):
                     fname.append(fs[:-1])
                     if fs[:-1] not in childL:
-                        item = QtWidgets.QTreeWidgetItem(treeWidget.currentItem())
+                        item = QtWidgets.QTreeWidgetItem(current_item)
                         item.setText(0, fs[:-1])
                         if item.isExpanded():
-                            item.setIcon(0, QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder_opened.svg'))
+                            item.setIcon(0, QIcon(
+                                os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder_opened.svg'))
                         else:
-                            item.setIcon(0, QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder.svg'))
+                            item.setIcon(0, QIcon(
+                                os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder.svg'))
 
-            item = treeWidget.currentItem()
+            item = current_item
             for i in range(childCount - 1, -1, -1):
                 if item.child(i).text(0) not in fname:
                     item.removeChild(item.child(i))
+
+
         except Exception as e:
+            treeWidget.setCurrentItem(current_item.parent())
             QtWidgets.QMessageBox.about(self, "连接失败！", str(Exception(e)))
 
 
