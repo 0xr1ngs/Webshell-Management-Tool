@@ -19,7 +19,8 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
         QMainWindow.__init__(self)
         mainWindowFront.Ui_MainWindow.__init__(self)
         self.setupUi(self)
-        self.tab_index = 0
+        self.tabMaxIndex = 0
+        self.tabIndex = [0]
         self.row_num = -1
         self.index = -1
         self.init_table()
@@ -164,9 +165,13 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
 
         if self.row_num != -1:
             item1 = menu.addAction('打开')
+            item1.setIcon(QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/shell_easyicon.svg'))
             item2 = menu.addAction('编辑')
+            item2.setIcon(QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/edit_easyicon.svg'))
             item3 = menu.addAction('删除')
+            item3.setIcon(QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/delete_easyicon.svg'))
             item4 = menu.addAction('查看')
+            item4.setIcon(QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/web_easyicon.svg'))
             action = menu.exec_(self.shellTableWidget.mapToGlobal(pos))
 
             if action == item1:
@@ -188,14 +193,18 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                 self.displayWeb(self.shellTableWidget.item(self.row_num, 0).text())
         else:
             item = menu.addAction('新建')
+            item.setIcon(QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/add_button_easyicon.svg'))
             action = menu.exec_(self.shellTableWidget.mapToGlobal(pos))
             if action == item:
                 self.add_shell()
 
     def displayWeb(self, url):
-        self.tab_index += 1
+        self.tabMaxIndex += 1
+        # tb是TabIndex中的元素
+        tb = self.tabMaxIndex
+        self.tabIndex.append(tb)
+
         self.new_tab = QtWidgets.QWidget()
-        self.new_tab.setObjectName('tab_' + str(self.tab_index))
 
         self.browser = QWebEngineView()
         self.browser.load(QtCore.QUrl(url))
@@ -204,13 +213,15 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
         self.tabWidget.addTab(self.new_tab, url)
         self.xbutton = QtWidgets.QPushButton("x")
         self.xbutton.setFixedSize(16, 16)
-        self.xbutton.clicked.connect(lambda: self.del_tab(self.tab_index))
-        self.tabWidget.tabBar().setTabButton(self.tab_index, self.tabWidget.tabBar().RightSide, self.xbutton)
-        self.tabWidget.setCurrentIndex(self.tab_index)
+        self.xbutton.clicked.connect(lambda: self.delTab(tb))
+        # 用index方法找到标签页的相对位置
+        self.tabWidget.tabBar().setTabButton(self.tabIndex.index(tb), self.tabWidget.tabBar().RightSide, self.xbutton)
+        self.tabWidget.setCurrentIndex(self.tabIndex.index(tb))
 
-    def del_tab(self, index):
-        self.tabWidget.removeTab(index)
-        self.tab_index -= 1
+    def delTab(self, tb):
+        # 依据相对位置进行tab页面的删除
+        self.tabWidget.removeTab(self.tabIndex.index(tb))
+        self.tabIndex.remove(tb)
 
     def generateFileListMenu(self, data, pos):
         url = data[0]
@@ -495,10 +506,12 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             rdata = r.split('\n')
             QtWidgets.QMessageBox.about(self, "连接成功！", r)
 
-            self.tab_index += 1
-            self.new_tab = QtWidgets.QWidget()
-            self.new_tab.setObjectName('tab_' + str(self.tab_index))
+            self.tabMaxIndex += 1
+            # tb是TabIndex中的元素
+            tb = self.tabMaxIndex
+            self.tabIndex.append(tb)
 
+            self.new_tab = QtWidgets.QWidget()
 
             self.gridLayout = QtWidgets.QGridLayout(self.new_tab)
             self.gridLayout.setObjectName("gridLayout")
@@ -617,9 +630,10 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             self.horizontalLayout.addWidget(self.tabWidget)
             self.xbutton = QtWidgets.QPushButton("x")
             self.xbutton.setFixedSize(16, 16)
-            self.xbutton.clicked.connect(lambda: self.del_tab(self.tab_index))
-            self.tabWidget.tabBar().setTabButton(self.tab_index, self.tabWidget.tabBar().RightSide, self.xbutton)
-            self.tabWidget.setCurrentIndex(self.tab_index)
+            self.xbutton.clicked.connect(lambda: self.delTab(tb))
+            # 用index方法找到标签页的相对位置
+            self.tabWidget.tabBar().setTabButton(self.tabIndex.index(tb), self.tabWidget.tabBar().RightSide, self.xbutton)
+            self.tabWidget.setCurrentIndex(self.tabIndex.index(tb))
 
             # 右键菜单
             fileTableWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
