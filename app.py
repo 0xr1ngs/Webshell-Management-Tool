@@ -6,10 +6,12 @@ import sys
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QTableWidgetItem, QMenu
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QIcon
+from PyQt5.Qsci import *
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from qqwry import QQwry
 from functools import partial
 from testConnShell import *
+from viewFile import setEditor
 import pathlib
 import mainWindowFront, addShell, genShellPhp
 import os, time, json, re
@@ -204,18 +206,18 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
         tb = self.tabMaxIndex
         self.tabIndex.append(tb)
 
-        self.new_tab = QtWidgets.QWidget()
+        new_tab = QtWidgets.QWidget()
 
         self.browser = QWebEngineView()
         self.browser.load(QtCore.QUrl(url))
-        self.gridLayout = QtWidgets.QGridLayout(self.new_tab)
+        self.gridLayout = QtWidgets.QGridLayout(new_tab)
         self.gridLayout.addWidget(self.browser, 0, 0)
-        self.tabWidget.addTab(self.new_tab, url)
-        self.xbutton = QtWidgets.QPushButton("x")
-        self.xbutton.setFixedSize(16, 16)
-        self.xbutton.clicked.connect(lambda: self.delTab(tb))
+        self.tabWidget.addTab(new_tab, url)
+        xbutton = QtWidgets.QPushButton("x")
+        xbutton.setFixedSize(16, 16)
+        xbutton.clicked.connect(lambda: self.delTab(tb))
         # 用index方法找到标签页的相对位置
-        self.tabWidget.tabBar().setTabButton(self.tabIndex.index(tb), self.tabWidget.tabBar().RightSide, self.xbutton)
+        self.tabWidget.tabBar().setTabButton(self.tabIndex.index(tb), self.tabWidget.tabBar().RightSide, xbutton)
         self.tabWidget.setCurrentIndex(self.tabIndex.index(tb))
 
     def delTab(self, tb):
@@ -376,10 +378,11 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                         QtWidgets.QMessageBox.about(self, "上传失败！", str(Exception(e)))
                 elif action == item1:
                     try:
+                        #TODO 后台下载
                         filename = fileTableWidget.item(self.row_num, 0).text()
-                        buffer = downloadFile(url, password, dir + filename)
                         file = QtWidgets.QFileDialog.getSaveFileName(self, '保存路径', filename)
                         if file[0] != '':
+                            buffer = downloadFile(url, password, dir + filename)
                             with open(file[0], 'w', encoding='utf-8') as f:
                                 f.write(buffer)
                             QtWidgets.QMessageBox.about(self, "下载成功！", '文件已保存')
@@ -482,7 +485,6 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             item = data[5]
         else:
             item = treeWidget.currentItem()
-
         #print(item.text(0))
 
         #计算当前行数
@@ -496,8 +498,62 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
                 if item.child(i).text(0) == temp:
                     self.updateTree([url, password, treeWidget, fileTableWidget, rdata, 1, item.child(i)])
         else:
-            pass# TODO 文件打开的处理（二进制和文本文件，淦）
+            try:
+                dir = self.parsePath(item, rdata)
+                filename = fileTableWidget.item(row_num, 0).text()
+                filesize = fileTableWidget.item(row_num, 2).text()
+                fileConetent = readFile(url, password, dir + filename)
+                # 如果为二进制文件或者超过10M就下载
+                if  maxFileSize(filesize) or '\0' in fileConetent:
+                    try:
+                        #TODO 后台下载
+                        file = QtWidgets.QFileDialog.getSaveFileName(self, '保存路径', filename)
+                        if file[0] != '':
+                            buffer = downloadFile(url, password, dir + filename)
+                            with open(file[0], 'w', encoding='utf-8') as f:
+                                f.write(buffer)
+                            QtWidgets.QMessageBox.about(self, "下载成功！", '文件已保存')
+                    except Exception as e:
+                        QtWidgets.QMessageBox.about(self, "下载失败！", str(Exception(e)))
+                else:
+                    try:
+                        self.tabMaxIndex += 1
+                        # tb是TabIndex中的元素
+                        tb = self.tabMaxIndex
+                        self.tabIndex.append(tb)
+                        # TODO 第二次双击不能CTRLS保存的BUG
+                        fileConetent = downloadFile(url, password, dir + filename)
 
+                        editor = setEditor(url, password, self, dir + filename, fileConetent, self.tabWidget)
+                        editor.setText(fileConetent)
+                        editor.set()
+
+                        xbutton = QtWidgets.QPushButton("x")
+                        xbutton.setFixedSize(16, 16)
+                        xbutton.clicked.connect(lambda: self.delEditorTab([tb, editor]))
+                        # 用index方法找到标签页的相对位置
+                        self.tabWidget.tabBar().setTabButton(self.tabIndex.index(tb), self.tabWidget.tabBar().RightSide,
+                                                             xbutton)
+                        self.tabWidget.setCurrentIndex(self.tabIndex.index(tb))
+                    except Exception as e:
+                        QtWidgets.QMessageBox.about(self, "文件打开失败", str(Exception(e)))
+            except Exception as e:
+                QtWidgets.QMessageBox.about(self, "存在异常", str(Exception(e)))
+
+    def delEditorTab(self, arg):
+        tb = arg[0]
+        editor = arg[1]
+        # 依据相对位置进行tab页面的删除
+        if editor.mod:
+            if editor.askforsave():
+                self.tabWidget.removeTab(self.tabIndex.index(tb))
+                self.tabIndex.remove(tb)
+            else:
+                # 如果点击了cancle就什么也不做
+                pass
+        else:
+            self.tabWidget.removeTab(self.tabIndex.index(tb))
+            self.tabIndex.remove(tb)
     def displayShell(self):
         try:
             url = self.shellTableWidget.item(self.row_num, 0).text()
@@ -511,11 +567,11 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             tb = self.tabMaxIndex
             self.tabIndex.append(tb)
 
-            self.new_tab = QtWidgets.QWidget()
+            new_tab = QtWidgets.QWidget()
 
-            self.gridLayout = QtWidgets.QGridLayout(self.new_tab)
+            self.gridLayout = QtWidgets.QGridLayout(new_tab)
             self.gridLayout.setObjectName("gridLayout")
-            fileTableWidget = QtWidgets.QTableWidget(self.new_tab)
+            fileTableWidget = QtWidgets.QTableWidget(new_tab)
             fileTableWidget.setObjectName("fileTableWidget")
             fileTableWidget.setColumnCount(4)
             fileTableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
@@ -544,7 +600,7 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             self.updataTable(files, fileTableWidget)
 
 
-            treeWidget = QtWidgets.QTreeWidget(self.new_tab)
+            treeWidget = QtWidgets.QTreeWidget(new_tab)
             treeWidget.setObjectName("treeWidget")
             treeWidget.setStyle(QtWidgets.QStyleFactory.create("windows"))
 
@@ -600,13 +656,13 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             treeWidget.header().setHighlightSections(False)
             treeWidget.expandAll()
 
-            self.label = QtWidgets.QLabel(self.new_tab)
+            self.label = QtWidgets.QLabel(new_tab)
             self.label.setMaximumSize(QtCore.QSize(91, 61))
             self.label.setTextFormat(QtCore.Qt.RichText)
             self.label.setScaledContents(False)
             self.label.setObjectName("label")
 
-            self.label_2 = QtWidgets.QLabel(self.new_tab)
+            self.label_2 = QtWidgets.QLabel(new_tab)
             self.label_2.setMaximumSize(QtCore.QSize(91, 61))
             self.label_2.setTextFormat(QtCore.Qt.RichText)
             self.label_2.setScaledContents(False)
@@ -626,13 +682,13 @@ class mainCode(QMainWindow, mainWindowFront.Ui_MainWindow):
             self.label_2.setText(
                 "<html><head/><body><p align=\"center\"><span style=\" font-size:16pt; font-weight:600;\">文件列表</span></p></body></html>")
 
-            self.tabWidget.addTab(self.new_tab, self.shellTableWidget.item(self.row_num, 1).text())
+            self.tabWidget.addTab(new_tab, self.shellTableWidget.item(self.row_num, 1).text())
             self.horizontalLayout.addWidget(self.tabWidget)
-            self.xbutton = QtWidgets.QPushButton("x")
-            self.xbutton.setFixedSize(16, 16)
-            self.xbutton.clicked.connect(lambda: self.delTab(tb))
+            xbutton = QtWidgets.QPushButton("x")
+            xbutton.setFixedSize(16, 16)
+            xbutton.clicked.connect(lambda: self.delTab(tb))
             # 用index方法找到标签页的相对位置
-            self.tabWidget.tabBar().setTabButton(self.tabIndex.index(tb), self.tabWidget.tabBar().RightSide, self.xbutton)
+            self.tabWidget.tabBar().setTabButton(self.tabIndex.index(tb), self.tabWidget.tabBar().RightSide, xbutton)
             self.tabWidget.setCurrentIndex(self.tabIndex.index(tb))
 
             # 右键菜单
