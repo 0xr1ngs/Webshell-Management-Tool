@@ -2,7 +2,7 @@ from PyQt5.QtCore import *
 from PyQt5.Qsci import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-from testConnShell import *
+from Core.php.testConnShell import *
 import keyword
 
 
@@ -36,14 +36,14 @@ class highlight(QsciLexerPython):
 
 
 class setEditor(QsciScintilla):
-    def __init__(self, url, password, mainWindow, filenameArg, fileConetent, tabWidget):
+    def __init__(self, url, password, mainWindow, filenameArg):
         QsciScintilla.__init__(self)
         self.url = url
         self.password = password
         self.mainWindow = mainWindow
         self.filenameArg = filenameArg
-        self.fileConetent = fileConetent
-        self.tabWidget = tabWidget
+        self.fileConetent = downloadFile(url, password, filenameArg)
+        self.tabWidget = mainWindow.tabWidget
         
     def set(self):
         font = QFont()
@@ -146,7 +146,6 @@ class setEditor(QsciScintilla):
                 return True
 
     def save(self):
-        print(1)
         self.mod = False
         r = uploadFile(self.url, self.password, self.text(), self.filenameArg)
         if r != '1':

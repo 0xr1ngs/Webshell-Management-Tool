@@ -5,9 +5,9 @@
 # datetime: 2021/1/8 18:16
 # software: PyCharm
 
-import requests, urllib.parse, socket, re
+import requests, urllib.parse, socket
 from random import randint
-from base64 import b64decode, b64encode
+from base64 import b64encode
 
 def genRandomStr(num):
     r = []
