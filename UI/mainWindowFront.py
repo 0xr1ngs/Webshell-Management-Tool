@@ -10,7 +10,7 @@
 from qqwry import QQwry
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from Core.php.testConnShell import dns_resolver
+from Core.php.connectToShell import dns_resolver
 import os, sys, json, time
 import addShell, genShellPhp, displayShellDataTab
 
@@ -54,7 +54,7 @@ class Ui_MainWindow(object):
         self.shellTableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.shellTableWidget.setRowCount(0)
         self.shellTableWidget.setObjectName("tableWidget")
-        self.shellTableWidget.setColumnCount(6)
+        self.shellTableWidget.setColumnCount(7)
         item = QtWidgets.QTableWidgetItem()
         self.shellTableWidget.setHorizontalHeaderItem(0, item)
         item = QtWidgets.QTableWidgetItem()
@@ -67,6 +67,8 @@ class Ui_MainWindow(object):
         self.shellTableWidget.setHorizontalHeaderItem(4, item)
         item = QtWidgets.QTableWidgetItem()
         self.shellTableWidget.setHorizontalHeaderItem(5, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.shellTableWidget.setHorizontalHeaderItem(6, item)
         self.shellTableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.shellTableWidget.verticalHeader().setVisible(False)
         self.horizontalLayout_2.addWidget(self.shellTableWidget)
@@ -113,10 +115,12 @@ class Ui_MainWindow(object):
         item.setText(_translate("MainWindow", "网站备注"))
         item = self.shellTableWidget.horizontalHeaderItem(5)
         item.setText(_translate("MainWindow", "修改时间"))
+        item = self.shellTableWidget.horizontalHeaderItem(6)
+        item.setText(_translate("MainWindow", "流量加密"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "主页面"))
         self.menu_shell.setTitle(_translate("MainWindow", "生成shell"))
         self.menu.setTitle(_translate("MainWindow", "文件"))
-        self.genShellPhp.setText(_translate("MainWindow", "php一句话木马"))
+        self.genShellPhp.setText(_translate("MainWindow", "php RSA流量加密"))
         self.action_shell.setText(_translate("MainWindow", "添加shell"))
 
 
@@ -140,44 +144,55 @@ class Ui_MainWindow(object):
 
         self.ds = displayShellDataTab.displayShellData(self)
 
-        current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-        with open(current_path + "/cache/db.json", "r") as f:
-            d = json.load(f)
-            for index, data in d.items():
-                self.shellTableWidget.setRowCount(int(index) + 1)
-                # 添加URL
-                newItem = QtWidgets.QTableWidgetItem(data["URL链接"])
-                newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-                self.shellTableWidget.setItem(int(index), 0, newItem)
+        '''
+        从cache中读取数据，也可能没有
+        '''
+        try:
+            current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+            with open(current_path + "/cache/db.json", "r") as f:
+                d = json.load(f)
+                for index, data in d.items():
+                    self.shellTableWidget.setRowCount(int(index) + 1)
+                    # 添加URL
+                    newItem = QtWidgets.QTableWidgetItem(data["URL链接"])
+                    newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                    self.shellTableWidget.setItem(int(index), 0, newItem)
 
-                # 添加IP
-                newItem = QtWidgets.QTableWidgetItem(data["IP地址"])
-                newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-                self.shellTableWidget.setItem(int(index), 1, newItem)
+                    # 添加IP
+                    newItem = QtWidgets.QTableWidgetItem(data["IP地址"])
+                    newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                    self.shellTableWidget.setItem(int(index), 1, newItem)
 
-                # 添加密码
-                newItem = QtWidgets.QTableWidgetItem(data["密码"])
-                newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-                self.shellTableWidget.setItem(int(index), 2, newItem)
+                    # 添加密码
+                    newItem = QtWidgets.QTableWidgetItem(data["密码"])
+                    newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                    self.shellTableWidget.setItem(int(index), 2, newItem)
 
-                # 添加物理地址
-                newItem = QtWidgets.QTableWidgetItem(data["物理位置"])
-                newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-                self.shellTableWidget.setItem(int(index), 3, newItem)
+                    # 添加物理地址
+                    newItem = QtWidgets.QTableWidgetItem(data["物理位置"])
+                    newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                    self.shellTableWidget.setItem(int(index), 3, newItem)
 
-                # 添加备注
-                newItem = QtWidgets.QTableWidgetItem(data["网站备注"])
-                newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-                self.shellTableWidget.setItem(int(index), 4, newItem)
+                    # 添加备注
+                    newItem = QtWidgets.QTableWidgetItem(data["网站备注"])
+                    newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                    self.shellTableWidget.setItem(int(index), 4, newItem)
 
-                # 添加时间
-                newItem = QtWidgets.QTableWidgetItem(data["修改时间"])
-                newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-                self.shellTableWidget.setItem(int(index), 5, newItem)
+                    # 添加时间
+                    newItem = QtWidgets.QTableWidgetItem(data["修改时间"])
+                    newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                    self.shellTableWidget.setItem(int(index), 5, newItem)
 
+                    # 流量加密选项
+                    newItem = QtWidgets.QTableWidgetItem(data["流量加密"])
+                    newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                    self.shellTableWidget.setItem(int(index), 6, newItem)
+        except:
+            pass
+        self.shellTableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.shellTableWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         self.shellTableWidget.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
-
+        self.shellTableWidget.horizontalHeader().setSectionResizeMode(6, QtWidgets.QHeaderView.ResizeToContents)
 
 
     def closeEvent(self, Event):
@@ -192,20 +207,20 @@ class Ui_MainWindow(object):
                 data["物理位置"] = self.shellTableWidget.item(i, 3).text()
                 data["网站备注"] = self.shellTableWidget.item(i, 4).text()
                 data["修改时间"] = self.shellTableWidget.item(i, 5).text()
+                data["流量加密"] = self.shellTableWidget.item(i, 6).text()
                 js[i] = data
 
             with open(current_path + "/cache/db.json", "w") as f:
                 json.dump(js, f)
                 #print("加载入文件完成...")
         Event.accept()
+
     '''
     得生成全加密流量的shell
     '''
     # TODO
     def gen_shell_php(self):
-        dg = QtWidgets.QDialog()
-        shellPhp = genShellPhp.Ui_Dialog()
-        shellPhp.setupUi(dg)
+        dg = genShellPhp.Ui_Dialog()
         dg.exec()
 
     '''
@@ -223,6 +238,7 @@ class Ui_MainWindow(object):
         url = data[0]
         password = data[1]
         memo = data[2]
+        UseRSA = data[3]
         if self.row_num == -1:
             self.index = self.shellTableWidget.rowCount()
             self.shellTableWidget.setRowCount(self.index + 1)
@@ -261,14 +277,21 @@ class Ui_MainWindow(object):
         newItem = QtWidgets.QTableWidgetItem(memo)
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         self.shellTableWidget.setItem(self.index, 4, newItem)
+
         # 添加时间
         newItem = QtWidgets.QTableWidgetItem(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         self.shellTableWidget.setItem(self.index, 5, newItem)
 
-        self.shellTableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-        self.shellTableWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
-        self.shellTableWidget.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+        # 是否进行流量加密
+        if UseRSA:
+            newItem = QtWidgets.QTableWidgetItem('是')
+        else:
+            newItem = QtWidgets.QTableWidgetItem('否')
+        newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        self.shellTableWidget.setItem(self.index, 6, newItem)
+
+
 
     '''
     数据列表右键打开菜单
@@ -301,6 +324,8 @@ class Ui_MainWindow(object):
                 dg.lineEdit.setText(self.shellTableWidget.item(self.row_num, 0).text())
                 dg.lineEdit_2.setText(self.shellTableWidget.item(self.row_num, 2).text())
                 dg.lineEdit_3.setText(self.shellTableWidget.item(self.row_num, 4).text())
+                if self.shellTableWidget.item(self.row_num, 6).text() == '是':
+                    dg.checkBox.setChecked(True)
                 dg.signalDgData.connect(self.deal_emit_slot)
 
                 dg.exec()

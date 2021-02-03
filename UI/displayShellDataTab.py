@@ -7,7 +7,7 @@
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QIcon
 from functools import partial
-from Core.php.testConnShell import *
+from Core.php.connectToShell import *
 from UI.viewFile import setEditor
 import pathlib, os, re, sys
 
@@ -25,6 +25,8 @@ class displayShellData:
         treeWidget = data[2]
         fileTableWidget = data[3]
         rdata = data[4]
+        useRSA = data[6]
+
         if treeWidget.currentItem() is None:
             item = data[5]
         else:
@@ -63,11 +65,11 @@ class displayShellData:
                         if filePath[0] != '':
                             with open(filePath[0], encoding='utf-8') as f:
                                 buffer = f.read()
-                            r = uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]))
+                            r = uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]), useRSA)
                             if r == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "上传成功！", '文件已上传')
                                 # 更新文件目录
-                                files = scanDir(url, password, dir).split('\n')
+                                files = scanDir(url, password, dir, useRSA).split('\n')
                                 files = list(filter(None, files))
                                 self.updataTable(files, fileTableWidget)
                             else:
@@ -80,12 +82,12 @@ class displayShellData:
                         rfilename = fileTableWidget.item(self.mainWindow.row_num, 0).text()
                         dfilename, ok = QtWidgets.QInputDialog.getText(self.mainWindow, '重命名', '更改后的文件名：', text=rfilename)
                         if ok:
-                            if renameFile(url, password, dir + rfilename, dir + dfilename) == '1':
+                            if renameFile(url, password, dir + rfilename, dir + dfilename, useRSA) == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "重命名成功！", '文件已重命名')
                             else:
                                 QtWidgets.QMessageBox.about(self.mainWindow, "重命名失败！", '可能没有权限')
                             # 更新文件目录
-                            files = scanDir(url, password, dir).split('\n')
+                            files = scanDir(url, password, dir, useRSA).split('\n')
                             files = list(filter(None, files))
                             self.updataTable(files, fileTableWidget)
                     except Exception as e:
@@ -96,12 +98,12 @@ class displayShellData:
                         reply = QtWidgets.QMessageBox.question(self.mainWindow, '删除文件', "确定要删除该文件吗？", QtWidgets.QMessageBox.Yes
                                                                | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
                         if reply == QtWidgets.QMessageBox.Yes:
-                            if deleteFile(url, password, dir + file) == '1':
+                            if deleteFile(url, password, dir + file, useRSA) == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "删除成功！", '文件已删除')
                             else:
                                 QtWidgets.QMessageBox.about(self.mainWindow, "删除失败！", '可能没有权限')
                             # 更新文件目录
-                            files = scanDir(url, password, dir).split('\n')
+                            files = scanDir(url, password, dir, useRSA).split('\n')
                             files = list(filter(None, files))
                             self.updataTable(files, fileTableWidget)
                     except Exception as e:
@@ -115,19 +117,19 @@ class displayShellData:
                             searchObj = re.search('^0[0-7][0-7][0-7]$', nmode)
                             if searchObj is None:
                                 raise Exception('输入不合法')
-                            if chmodFile(url, password, dir + file, nmode) == '1':
+                            if chmodFile(url, password, dir + file, nmode, useRSA) == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "更改成功！", '权限已经更改')
                             else:
                                 QtWidgets.QMessageBox.about(self.mainWindow, "更改失败！", '更改权限失败！')
                             # 更新文件目录
-                            files = scanDir(url, password, dir).split('\n')
+                            files = scanDir(url, password, dir, useRSA).split('\n')
                             files = list(filter(None, files))
                             self.mainWindow.updataTable(files, fileTableWidget)
                     except Exception as e:
                         QtWidgets.QMessageBox.about(self.mainWindow, "更改权限失败！", str(Exception(e)))
                 elif action == item4:
                     # 更新文件目录
-                    files = scanDir(url, password, dir).split('\n')
+                    files = scanDir(url, password, dir, useRSA).split('\n')
                     files = list(filter(None, files))
                     self.updataTable(files, fileTableWidget)
             else:
@@ -158,11 +160,11 @@ class displayShellData:
                         if filePath[0] != '':
                             with open(filePath[0], encoding='utf-8') as f:
                                 buffer = f.read()
-                            r = uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]))
+                            r = uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]), useRSA)
                             if r == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "上传成功！", '文件已上传')
                                 # 更新文件目录
-                                files = scanDir(url, password, dir).split('\n')
+                                files = scanDir(url, password, dir, useRSA).split('\n')
                                 files = list(filter(None, files))
                                 self.updataTable(files, fileTableWidget)
                             else:
@@ -176,7 +178,7 @@ class displayShellData:
                         filename = fileTableWidget.item(self.mainWindow.row_num, 0).text()
                         file = QtWidgets.QFileDialog.getSaveFileName(self.mainWindow, '保存路径', filename)
                         if file[0] != '':
-                            buffer = downloadFile(url, password, dir + filename)
+                            buffer = downloadFile(url, password, dir + filename, useRSA)
                             with open(file[0], 'w', encoding='utf-8') as f:
                                 f.write(buffer)
                             QtWidgets.QMessageBox.about(self.mainWindow, "下载成功！", '文件已保存')
@@ -187,12 +189,12 @@ class displayShellData:
                         rfilename = fileTableWidget.item(self.mainWindow.row_num, 0).text()
                         dfilename, ok = QtWidgets.QInputDialog.getText(self.mainWindow, '重命名', '更改后的文件名：', text=rfilename)
                         if ok:
-                            if renameFile(url, password, dir + rfilename, dir + dfilename) == '1':
+                            if renameFile(url, password, dir + rfilename, dir + dfilename, useRSA) == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "重命名成功！", '文件已重命名')
                             else:
                                 QtWidgets.QMessageBox.about(self.mainWindow, "重命名失败！", '可能没有权限')
                             # 更新文件目录
-                            files = scanDir(url, password, dir).split('\n')
+                            files = scanDir(url, password, dir, useRSA).split('\n')
                             files = list(filter(None, files))
                             self.updataTable(files, fileTableWidget)
                     except Exception as e:
@@ -203,12 +205,12 @@ class displayShellData:
                         reply = QtWidgets.QMessageBox.question(self.mainWindow, '删除文件', "确定要删除该文件吗？", QtWidgets.QMessageBox.Yes
                                                                | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
                         if reply == QtWidgets.QMessageBox.Yes:
-                            if deleteFile(url, password, dir + file) == '1':
+                            if deleteFile(url, password, dir + file, useRSA) == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "删除成功！", '文件已删除')
                             else:
                                 QtWidgets.QMessageBox.about(self.mainWindow, "删除失败！", '可能没有权限')
                             # 更新文件目录
-                            files = scanDir(url, password, dir).split('\n')
+                            files = scanDir(url, password, dir, useRSA).split('\n')
                             files = list(filter(None, files))
                             self.updataTable(files, fileTableWidget)
                     except Exception as e:
@@ -222,19 +224,19 @@ class displayShellData:
                             searchObj = re.search('^0[0-7][0-7][0-7]$', nmode)
                             if searchObj is None:
                                 raise Exception('输入不合法')
-                            if chmodFile(url, password, dir + file, nmode) == '1':
+                            if chmodFile(url, password, dir + file, nmode, useRSA) == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "更改成功！", '权限已经更改')
                             else:
                                 QtWidgets.QMessageBox.about(self.mainWindow, "更改失败！", '更改权限失败！')
                             # 更新文件目录
-                            files = scanDir(url, password, dir).split('\n')
+                            files = scanDir(url, password, dir, useRSA).split('\n')
                             files = list(filter(None, files))
                             self.updataTable(files, fileTableWidget)
                     except Exception as e:
                         QtWidgets.QMessageBox.about(self.mainWindow, "更改权限失败！", str(Exception(e)))
                 elif action == item5:
                     # 更新文件目录
-                    files = scanDir(url, password, dir).split('\n')
+                    files = scanDir(url, password, dir, useRSA).split('\n')
                     files = list(filter(None, files))
                     self.updataTable(files, fileTableWidget)
         else:
@@ -251,11 +253,11 @@ class displayShellData:
                     if filePath[0] != '':
                         with open(filePath[0], encoding='utf-8') as f:
                             buffer = f.read()
-                        r = uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]))
+                        r = uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]), useRSA)
                         if r == '1':
                             QtWidgets.QMessageBox.about(self.mainWindow, "上传成功！", '文件已上传')
                             # 更新文件目录
-                            files = scanDir(url, password, dir).split('\n')
+                            files = scanDir(url, password, dir, useRSA).split('\n')
                             files = list(filter(None, files))
                             self.updataTable(files, fileTableWidget)
                         else:
@@ -265,7 +267,7 @@ class displayShellData:
                     QtWidgets.QMessageBox.about(self.mainWindow, "上传失败！", str(Exception(e)))
             elif action == item2:
                 # 更新文件目录
-                files = scanDir(url, password, dir).split('\n')
+                files = scanDir(url, password, dir, useRSA).split('\n')
                 files = list(filter(None, files))
                 self.updataTable(files, fileTableWidget)
 
@@ -279,6 +281,7 @@ class displayShellData:
         treeWidget = data[2]
         fileTableWidget = data[3]
         rdata = data[4]
+        useRSA = data[6]
         if treeWidget.currentItem() is None:
             item = data[5]
         else:
@@ -294,20 +297,20 @@ class displayShellData:
             temp = fileTableWidget.item(row_num, 0).text()[:-1]
             for i in range(item.childCount()):
                 if item.child(i).text(0) == temp:
-                    self.updateTree([url, password, treeWidget, fileTableWidget, rdata, 1, item.child(i)])
+                    self.updateTree([url, password, treeWidget, fileTableWidget, rdata, useRSA, 1, item.child(i)])
         else:
             try:
                 dir = self.parsePath(item, rdata)
                 filename = fileTableWidget.item(row_num, 0).text()
                 filesize = fileTableWidget.item(row_num, 2).text()
-                fileConetent = readFile(url, password, dir + filename)
+                fileConetent = readFile(url, password, dir + filename, useRSA)
                 # 如果为二进制文件或者超过10M就下载
                 if maxFileSize(filesize) or '\0' in fileConetent:
                     try:
                         # TODO 后台下载
                         file = QtWidgets.QFileDialog.getSaveFileName(self.mainWindow, '保存路径', filename)
                         if file[0] != '':
-                            buffer = downloadFile(url, password, dir + filename)
+                            buffer = downloadFile(url, password, dir + filename, useRSA)
                             with open(file[0], 'w', encoding='utf-8') as f:
                                 f.write(buffer)
                             QtWidgets.QMessageBox.about(self.mainWindow, "下载成功！", '文件已保存')
@@ -320,7 +323,7 @@ class displayShellData:
                         tb = self.mainWindow.tabMaxIndex
                         self.mainWindow.tabIndex.append(tb)
 
-                        editor = setEditor(url, password, self.mainWindow, dir + filename)
+                        editor = setEditor(url, password, self.mainWindow, dir + filename, useRSA)
                         editor.setText(fileConetent)
                         editor.set()
 
@@ -365,7 +368,8 @@ class displayShellData:
         try:
             url = self.mainWindow.shellTableWidget.item(self.mainWindow.row_num, 0).text()
             password = self.mainWindow.shellTableWidget.item(self.mainWindow.row_num, 2).text()
-            r = TestConn(url, password)
+            useRSA = self.mainWindow.shellTableWidget.item(self.mainWindow.row_num, 6).text()
+            r = TestConn(url, password, useRSA)
             rdata = r.split('\n')
             QtWidgets.QMessageBox.about(self.mainWindow, "连接成功！", r)
 
@@ -400,7 +404,7 @@ class displayShellData:
             fileTableWidget.setColumnWidth(0, 200)
 
             # 更新fileTableWidget
-            files = scanDir(url, password, rdata[0] + '/').split('\n')
+            files = scanDir(url, password, rdata[0] + '/', useRSA).split('\n')
             files = list(filter(None, files))
             self.updataTable(files, fileTableWidget)
 
@@ -450,8 +454,8 @@ class displayShellData:
                 itemStack.append(item)
 
             # 更新节点
-            self.updateTree([url, password, treeWidget, fileTableWidget, rdata, 1, item])
-            treeWidget.clicked.connect(lambda: self.updateTree([url, password, treeWidget, fileTableWidget, rdata, 0]))
+            self.updateTree([url, password, treeWidget, fileTableWidget, rdata, useRSA, 1, item])
+            treeWidget.clicked.connect(lambda: self.updateTree([url, password, treeWidget, fileTableWidget, rdata, useRSA, 0]))
             # 处理展开的Icon
             treeWidget.itemExpanded.connect(self.treeExpaned)
             treeWidget.itemCollapsed.connect(self.treeCollapsed)
@@ -498,10 +502,10 @@ class displayShellData:
             fileTableWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
             fileTableWidget.customContextMenuRequested.connect(
                 partial(self.generateFileListMenu, [url, password, treeWidget,
-                                                    fileTableWidget, rdata, item]))
+                                                    fileTableWidget, rdata, item, useRSA]))
             # 双击事件
             fileTableWidget.doubleClicked.connect(partial(self.fileTableDoubleClicked, [url, password, treeWidget,
-                                                                                        fileTableWidget, rdata, item]))
+                                                                                        fileTableWidget, rdata, item, useRSA]))
         except Exception as e:
             QtWidgets.QMessageBox.about(self.mainWindow, "连接失败！", str(Exception(e)))
 
@@ -568,9 +572,10 @@ class displayShellData:
         treeWidget = data[2]
         fileTableWidget = data[3]
         rdata = data[4]
-        doubleClicked = data[5]
+        doubleClicked = data[6]
+        useRSA = data[5]
         if doubleClicked:
-            citem = data[6]
+            citem = data[7]
             current_item = citem
             treeWidget.setCurrentItem(current_item)
         else:
@@ -579,7 +584,7 @@ class displayShellData:
 
         try:
             # 更新文件列表
-            files = scanDir(url, password, dir).split('\n')
+            files = scanDir(url, password, dir, useRSA).split('\n')
             files = list(filter(None, files))
             self.updataTable(files, fileTableWidget)
 
