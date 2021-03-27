@@ -11,8 +11,14 @@ from qqwry import QQwry
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from Core.php.connectToShell import dns_resolver
-import os, sys, json, time
-import addShell, genShellPhp, displayShellDataTab
+import os
+import sys
+import json
+import time
+import addShell
+import genShellPhp
+import displayShellDataTab
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -20,7 +26,8 @@ class Ui_MainWindow(object):
         MainWindow.resize(960, 720)
         MainWindow.setMinimumSize(QtCore.QSize(800, 600))
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/knife_easyicon.net.svg'), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/knife_easyicon.net.svg'),
+                       QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
         MainWindow.setToolTipDuration(0)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -95,7 +102,6 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menu.menuAction())
         self.menubar.addAction(self.menu_shell.menuAction())
 
-
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -123,10 +129,10 @@ class Ui_MainWindow(object):
         self.genShellPhp.setText(_translate("MainWindow", "php RSA流量加密"))
         self.action_shell.setText(_translate("MainWindow", "添加shell"))
 
-
     '''
     从cache中读取shell数据，并且重写close方法，在点击关闭后自动保存当前的数据到cache里面
     '''
+
     def initTable(self):
         '''
         相关参数
@@ -194,7 +200,6 @@ class Ui_MainWindow(object):
         self.shellTableWidget.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
         self.shellTableWidget.horizontalHeader().setSectionResizeMode(6, QtWidgets.QHeaderView.ResizeToContents)
 
-
     def closeEvent(self, Event):
         if self.index != -1:
             js = {}
@@ -212,13 +217,13 @@ class Ui_MainWindow(object):
 
             with open(current_path + "/cache/db.json", "w") as f:
                 json.dump(js, f)
-                #print("加载入文件完成...")
+                # print("加载入文件完成...")
         Event.accept()
 
     '''
     得生成全加密流量的shell
     '''
-    # TODO
+
     def gen_shell_php(self):
         dg = genShellPhp.Ui_Dialog()
         dg.exec()
@@ -226,6 +231,7 @@ class Ui_MainWindow(object):
     '''
     展示添加数据页面
     '''
+
     def add_shell(self):
         dg = addShell.Ui_dialog()
         dg.signalDgData.connect(self.deal_emit_slot)
@@ -234,6 +240,7 @@ class Ui_MainWindow(object):
     '''
     处理窗口关闭前传过来的URL等数据
     '''
+
     def deal_emit_slot(self, data):
         url = data[0]
         password = data[1]
@@ -245,23 +252,23 @@ class Ui_MainWindow(object):
         else:
             self.index = self.row_num
 
-        #添加URL
+        # 添加URL
         newItem = QtWidgets.QTableWidgetItem(url)
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         self.shellTableWidget.setItem(self.index, 0, newItem)
 
-        #添加IP
-        ip= dns_resolver(url)
+        # 添加IP
+        ip = dns_resolver(url)
         newItem = QtWidgets.QTableWidgetItem(ip)
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         self.shellTableWidget.setItem(self.index, 1, newItem)
 
-        #添加密码
+        # 添加密码
         newItem = QtWidgets.QTableWidgetItem(password)
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         self.shellTableWidget.setItem(self.index, 2, newItem)
 
-        #添加物理地址
+        # 添加物理地址
         q = QQwry()
         q.load_file(os.path.dirname(__file__) + '/qqwry.dat')
         try:
@@ -273,7 +280,7 @@ class Ui_MainWindow(object):
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         self.shellTableWidget.setItem(self.index, 3, newItem)
 
-        #添加备注
+        # 添加备注
         newItem = QtWidgets.QTableWidgetItem(memo)
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         self.shellTableWidget.setItem(self.index, 4, newItem)
@@ -291,14 +298,13 @@ class Ui_MainWindow(object):
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         self.shellTableWidget.setItem(self.index, 6, newItem)
 
-
-
     '''
     数据列表右键打开菜单
     '''
+
     def generateMenu(self, pos):
         menu = QtWidgets.QMenu()
-        #计算当前行数
+        # 计算当前行数
         self.row_num = -1
         for i in self.shellTableWidget.selectionModel().selection().indexes():
             self.row_num = i.row()
@@ -339,11 +345,13 @@ class Ui_MainWindow(object):
             action = menu.exec_(self.shellTableWidget.mapToGlobal(pos))
             if action == item:
                 self.add_shell()
+
     '''
     双击数据列表时，展示数据详情
     '''
+
     def shellTableDoubleClicked(self):
-        #计算当前行数
+        # 计算当前行数
         self.row_num = -1
         for i in self.shellTableWidget.selectionModel().selection().indexes():
             self.row_num = i.row()
@@ -352,6 +360,7 @@ class Ui_MainWindow(object):
     '''
     展示shell得web页面
     '''
+
     def displayWeb(self, url):
         self.tabMaxIndex += 1
         # tb是TabIndex中的元素
@@ -375,6 +384,7 @@ class Ui_MainWindow(object):
     '''
     删除标签页的方法
     '''
+
     def delTab(self, tb):
         # 依据相对位置进行tab页面的删除
         self.tabWidget.removeTab(self.tabIndex.index(tb))

