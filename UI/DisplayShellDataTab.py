@@ -7,7 +7,9 @@
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QIcon
 from functools import partial
-from Core.php.ConnectToShellPhp import *
+import Core.php.ConnectToShellPhp as phpCore
+import Core.jsp.ConnectToShellJsp as jspCore
+from Core.base import *
 from UI.ViewFile import setEditor
 import pathlib, os, re, sys
 
@@ -26,6 +28,7 @@ class DisplayShellData:
         fileTableWidget = data[3]
         rdata = data[4]
         useRSA = data[6]
+        script = data[7]
 
         if treeWidget.currentItem() is None:
             item = data[5]
@@ -65,11 +68,18 @@ class DisplayShellData:
                         if filePath[0] != '':
                             with open(filePath[0], encoding='utf-8') as f:
                                 buffer = f.read()
-                            r = uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]), useRSA)
+                            if script == 'JSP':
+                                r = jspCore.uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]))
+                            else:
+                                r = phpCore.uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]), useRSA)
+
                             if r == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "上传成功！", '文件已上传')
                                 # 更新文件目录
-                                files = scanDir(url, password, dir, useRSA).split('\n')
+                                if script == 'JSP':
+                                    files = jspCore.scanDir(url, password, dir).split('\n')
+                                else:
+                                    files = phpCore.scanDir(url, password, dir, useRSA).split('\n')
                                 files = list(filter(None, files))
                                 self.updataTable(files, fileTableWidget)
                             else:
@@ -82,12 +92,20 @@ class DisplayShellData:
                         rfilename = fileTableWidget.item(self.mainWindow.row_num, 0).text()
                         dfilename, ok = QtWidgets.QInputDialog.getText(self.mainWindow, '重命名', '更改后的文件名：', text=rfilename)
                         if ok:
-                            if renameFile(url, password, dir + rfilename, dir + dfilename, useRSA) == '1':
+                            if script == 'JSP':
+                                reResult = jspCore.renameFile(url, password, dir + rfilename, dir + dfilename)
+                            else:
+                                reResult = phpCore.renameFile(url, password, dir + rfilename, dir + dfilename, useRSA)
+
+                            if reResult == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "重命名成功！", '文件已重命名')
                             else:
                                 QtWidgets.QMessageBox.about(self.mainWindow, "重命名失败！", '可能没有权限')
                             # 更新文件目录
-                            files = scanDir(url, password, dir, useRSA).split('\n')
+                            if script == 'JSP':
+                                files = jspCore.scanDir(url, password, dir).split('\n')
+                            else:
+                                files = phpCore.scanDir(url, password, dir, useRSA).split('\n')
                             files = list(filter(None, files))
                             self.updataTable(files, fileTableWidget)
                     except Exception as e:
@@ -98,12 +116,20 @@ class DisplayShellData:
                         reply = QtWidgets.QMessageBox.question(self.mainWindow, '删除文件', "确定要删除该文件吗？", QtWidgets.QMessageBox.Yes
                                                                | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
                         if reply == QtWidgets.QMessageBox.Yes:
-                            if deleteFile(url, password, dir + file, useRSA) == '1':
+                            if script == 'JSP':
+                                deResult = jspCore.deleteFile(url, password, dir + file)
+                            else:
+                                deResult = phpCore.deleteFile(url, password, dir + file, useRSA)
+                            if deResult == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "删除成功！", '文件已删除')
                             else:
                                 QtWidgets.QMessageBox.about(self.mainWindow, "删除失败！", '可能没有权限')
                             # 更新文件目录
-                            files = scanDir(url, password, dir, useRSA).split('\n')
+                            if script == 'JSP':
+                                files = jspCore.scanDir(url, password, dir).split('\n')
+                            else:
+                                files = phpCore.scanDir(url, password, dir, useRSA).split('\n')
+
                             files = list(filter(None, files))
                             self.updataTable(files, fileTableWidget)
                     except Exception as e:
@@ -117,19 +143,29 @@ class DisplayShellData:
                             searchObj = re.search('^0[0-7][0-7][0-7]$', nmode)
                             if searchObj is None:
                                 raise Exception('输入不合法')
-                            if chmodFile(url, password, dir + file, nmode, useRSA) == '1':
+                            if script == 'JSP':
+                                chmodResult = jspCore.chmodFile(url, password, dir + file, nmode)
+                            else:
+                                chmodResult = phpCore.chmodFile(url, password, dir + file, nmode, useRSA)
+
+                            if chmodResult == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "更改成功！", '权限已经更改')
                             else:
                                 QtWidgets.QMessageBox.about(self.mainWindow, "更改失败！", '更改权限失败！')
                             # 更新文件目录
-                            files = scanDir(url, password, dir, useRSA).split('\n')
-                            files = list(filter(None, files))
+                            if script == 'JSP':
+                                files = jspCore.scanDir(url, password, dir).split('\n')
+                            else:
+                                files = phpCore.scanDir(url, password, dir, useRSA).split('\n')
                             self.mainWindow.updataTable(files, fileTableWidget)
                     except Exception as e:
                         QtWidgets.QMessageBox.about(self.mainWindow, "更改权限失败！", str(Exception(e)))
                 elif action == item4:
                     # 更新文件目录
-                    files = scanDir(url, password, dir, useRSA).split('\n')
+                    if script == 'JSP':
+                        files = jspCore.scanDir(url, password, dir).split('\n')
+                    else:
+                        files = phpCore.scanDir(url, password, dir, useRSA).split('\n')
                     files = list(filter(None, files))
                     self.updataTable(files, fileTableWidget)
             else:
@@ -160,11 +196,17 @@ class DisplayShellData:
                         if filePath[0] != '':
                             with open(filePath[0], encoding='utf-8') as f:
                                 buffer = f.read()
-                            r = uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]), useRSA)
-                            if r == '1':
+                            if script == 'JSP':
+                                upResult = jspCore.uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]))
+                            else:
+                                upResult = phpCore.uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]), useRSA)
+                            if upResult == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "上传成功！", '文件已上传')
                                 # 更新文件目录
-                                files = scanDir(url, password, dir, useRSA).split('\n')
+                                if script == 'JSP':
+                                    files = jspCore.scanDir(url, password, dir).split('\n')
+                                else:
+                                    files = phpCore.scanDir(url, password, dir, useRSA).split('\n')
                                 files = list(filter(None, files))
                                 self.updataTable(files, fileTableWidget)
                             else:
@@ -178,7 +220,10 @@ class DisplayShellData:
                         filename = fileTableWidget.item(self.mainWindow.row_num, 0).text()
                         file = QtWidgets.QFileDialog.getSaveFileName(self.mainWindow, '保存路径', filename)
                         if file[0] != '':
-                            buffer = downloadFile(url, password, dir + filename, useRSA)
+                            if script == 'JSP':
+                                buffer = jspCore.downloadFile(url, password, dir + filename)
+                            else:
+                                buffer = phpCore.downloadFile(url, password, dir + filename, useRSA)
                             with open(file[0], 'w', encoding='utf-8') as f:
                                 f.write(buffer)
                             QtWidgets.QMessageBox.about(self.mainWindow, "下载成功！", '文件已保存')
@@ -189,12 +234,19 @@ class DisplayShellData:
                         rfilename = fileTableWidget.item(self.mainWindow.row_num, 0).text()
                         dfilename, ok = QtWidgets.QInputDialog.getText(self.mainWindow, '重命名', '更改后的文件名：', text=rfilename)
                         if ok:
-                            if renameFile(url, password, dir + rfilename, dir + dfilename, useRSA) == '1':
+                            if script == 'JSP':
+                                reResult = jspCore.renameFile(url, password, dir + rfilename, dir + dfilename)
+                            else:
+                                reResult = phpCore.renameFile(url, password, dir + rfilename, dir + dfilename, useRSA)
+                            if reResult == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "重命名成功！", '文件已重命名')
                             else:
                                 QtWidgets.QMessageBox.about(self.mainWindow, "重命名失败！", '可能没有权限')
                             # 更新文件目录
-                            files = scanDir(url, password, dir, useRSA).split('\n')
+                            if script == 'JSP':
+                                files = jspCore.scanDir(url, password, dir).split('\n')
+                            else:
+                                files = phpCore.scanDir(url, password, dir, useRSA).split('\n')
                             files = list(filter(None, files))
                             self.updataTable(files, fileTableWidget)
                     except Exception as e:
@@ -205,12 +257,19 @@ class DisplayShellData:
                         reply = QtWidgets.QMessageBox.question(self.mainWindow, '删除文件', "确定要删除该文件吗？", QtWidgets.QMessageBox.Yes
                                                                | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
                         if reply == QtWidgets.QMessageBox.Yes:
-                            if deleteFile(url, password, dir + file, useRSA) == '1':
+                            if script == 'JSP':
+                                deResult = jspCore.deleteFile(url, password, dir + file)
+                            else:
+                                deResult = phpCore.deleteFile(url, password, dir + file, useRSA)
+                            if deResult == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "删除成功！", '文件已删除')
                             else:
                                 QtWidgets.QMessageBox.about(self.mainWindow, "删除失败！", '可能没有权限')
                             # 更新文件目录
-                            files = scanDir(url, password, dir, useRSA).split('\n')
+                            if script == 'JSP':
+                                files = jspCore.scanDir(url, password, dir).split('\n')
+                            else:
+                                files = phpCore.scanDir(url, password, dir, useRSA).split('\n')
                             files = list(filter(None, files))
                             self.updataTable(files, fileTableWidget)
                     except Exception as e:
@@ -224,19 +283,29 @@ class DisplayShellData:
                             searchObj = re.search('^0[0-7][0-7][0-7]$', nmode)
                             if searchObj is None:
                                 raise Exception('输入不合法')
-                            if chmodFile(url, password, dir + file, nmode, useRSA) == '1':
+                            if script == 'JSP':
+                                chmodResult = jspCore.chmodFile(url, password, dir + file, nmode)
+                            else:
+                                chmodResult = phpCore.chmodFile(url, password, dir + file, nmode, useRSA)
+                            if chmodResult == '1':
                                 QtWidgets.QMessageBox.about(self.mainWindow, "更改成功！", '权限已经更改')
                             else:
                                 QtWidgets.QMessageBox.about(self.mainWindow, "更改失败！", '更改权限失败！')
                             # 更新文件目录
-                            files = scanDir(url, password, dir, useRSA).split('\n')
+                            if script == 'JSP':
+                                files = jspCore.scanDir(url, password, dir).split('\n')
+                            else:
+                                files = phpCore.scanDir(url, password, dir, useRSA).split('\n')
                             files = list(filter(None, files))
                             self.updataTable(files, fileTableWidget)
                     except Exception as e:
                         QtWidgets.QMessageBox.about(self.mainWindow, "更改权限失败！", str(Exception(e)))
                 elif action == item5:
                     # 更新文件目录
-                    files = scanDir(url, password, dir, useRSA).split('\n')
+                    if script == 'JSP':
+                        files = jspCore.scanDir(url, password, dir).split('\n')
+                    else:
+                        files = phpCore.scanDir(url, password, dir, useRSA).split('\n')
                     files = list(filter(None, files))
                     self.updataTable(files, fileTableWidget)
         else:
@@ -253,11 +322,17 @@ class DisplayShellData:
                     if filePath[0] != '':
                         with open(filePath[0], encoding='utf-8') as f:
                             buffer = f.read()
-                        r = uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]), useRSA)
+                        if script == 'JSP':
+                            r = jspCore.uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]))
+                        else:
+                            r = phpCore.uploadFile(url, password, buffer, dir + os.path.basename(filePath[0]), useRSA)
                         if r == '1':
                             QtWidgets.QMessageBox.about(self.mainWindow, "上传成功！", '文件已上传')
                             # 更新文件目录
-                            files = scanDir(url, password, dir, useRSA).split('\n')
+                            if script == 'JSP':
+                                files = jspCore.scanDir(url, password, dir).split('\n')
+                            else:
+                                files = phpCore.scanDir(url, password, dir, useRSA).split('\n')
                             files = list(filter(None, files))
                             self.updataTable(files, fileTableWidget)
                         else:
@@ -267,7 +342,10 @@ class DisplayShellData:
                     QtWidgets.QMessageBox.about(self.mainWindow, "上传失败！", str(Exception(e)))
             elif action == item2:
                 # 更新文件目录
-                files = scanDir(url, password, dir, useRSA).split('\n')
+                if script == 'JSP':
+                    files = jspCore.scanDir(url, password, dir).split('\n')
+                else:
+                    files = phpCore.scanDir(url, password, dir, useRSA).split('\n')
                 files = list(filter(None, files))
                 self.updataTable(files, fileTableWidget)
 
@@ -282,6 +360,7 @@ class DisplayShellData:
         fileTableWidget = data[3]
         rdata = data[4]
         useRSA = data[6]
+        script = data[7]
         if treeWidget.currentItem() is None:
             item = data[5]
         else:
@@ -297,13 +376,16 @@ class DisplayShellData:
             temp = fileTableWidget.item(row_num, 0).text()[:-1]
             for i in range(item.childCount()):
                 if item.child(i).text(0) == temp:
-                    self.updateTree([url, password, treeWidget, fileTableWidget, rdata, useRSA, 1, item.child(i)])
+                    self.updateTree([url, password, treeWidget, fileTableWidget, rdata, useRSA, script, 1, item.child(i)])
         else:
             try:
                 dir = self.parsePath(item, rdata)
                 filename = fileTableWidget.item(row_num, 0).text()
                 filesize = fileTableWidget.item(row_num, 2).text()
-                fileConetent = readFile(url, password, dir + filename, useRSA)
+                if script == 'JSP':
+                    fileConetent = jspCore.readFile(url, password, dir + filename)
+                else:
+                    fileConetent = phpCore.readFile(url, password, dir + filename, useRSA)
 
                 # 如果为二进制文件或者超过10M就下载
                 if maxFileSize(filesize) or '\0' in fileConetent:
@@ -311,7 +393,11 @@ class DisplayShellData:
                         # TODO 后台下载
                         file = QtWidgets.QFileDialog.getSaveFileName(self.mainWindow, '保存路径', filename)
                         if file[0] != '':
-                            buffer = downloadFile(url, password, dir + filename, useRSA)
+
+                            if script == 'JSP':
+                                buffer = jspCore.downloadFile(url, password, dir + filename)
+                            else:
+                                buffer = phpCore.downloadFile(url, password, dir + filename, useRSA)
                             with open(file[0], 'w', encoding='utf-8') as f:
                                 f.write(buffer)
                             QtWidgets.QMessageBox.about(self.mainWindow, "下载成功！", '文件已保存')
@@ -320,7 +406,7 @@ class DisplayShellData:
                 else:
                     try:
 
-                        editor = setEditor(url, password, self.mainWindow, dir + filename, useRSA)
+                        editor = setEditor(url, password, self.mainWindow, dir + filename, useRSA, script)
                         editor.setText(fileConetent)
                         editor.set()
 
@@ -374,7 +460,11 @@ class DisplayShellData:
             url = self.mainWindow.shellTableWidget.item(self.mainWindow.row_num, 0).text()
             password = self.mainWindow.shellTableWidget.item(self.mainWindow.row_num, 2).text()
             useRSA = self.mainWindow.shellTableWidget.item(self.mainWindow.row_num, 6).text()
-            r = TestConn(url, password, useRSA)
+            script = self.mainWindow.shellTableWidget.item(self.mainWindow.row_num, 7).text()
+            if script == 'JSP':
+                r = jspCore.TestConn(url, password)
+            else:
+                r = phpCore.TestConn(url, password, useRSA)
             rdata = r.split('\n')
             QtWidgets.QMessageBox.about(self.mainWindow, "连接成功！", r)
 
@@ -409,7 +499,10 @@ class DisplayShellData:
             fileTableWidget.setColumnWidth(0, 200)
 
             # 更新fileTableWidget
-            files = scanDir(url, password, rdata[0] + '/', useRSA).split('\n')
+            if script == 'JSP':
+                files = jspCore.scanDir(url, password, rdata[0] + '/').split('\n')
+            else:
+                files = phpCore.scanDir(url, password, rdata[0] + '/', useRSA).split('\n')
             files = list(filter(None, files))
             self.updataTable(files, fileTableWidget)
 
@@ -459,8 +552,8 @@ class DisplayShellData:
                 itemStack.append(item)
 
             # 更新节点
-            self.updateTree([url, password, treeWidget, fileTableWidget, rdata, useRSA, 1, item])
-            treeWidget.clicked.connect(lambda: self.updateTree([url, password, treeWidget, fileTableWidget, rdata, useRSA, 0]))
+            self.updateTree([url, password, treeWidget, fileTableWidget, rdata, useRSA, script, 1, item])
+            treeWidget.clicked.connect(lambda: self.updateTree([url, password, treeWidget, fileTableWidget, rdata, useRSA, script, 0]))
             # 处理展开的Icon
             treeWidget.itemExpanded.connect(self.treeExpaned)
             treeWidget.itemCollapsed.connect(self.treeCollapsed)
@@ -507,10 +600,10 @@ class DisplayShellData:
             fileTableWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
             fileTableWidget.customContextMenuRequested.connect(
                 partial(self.generateFileListMenu, [url, password, treeWidget,
-                                                    fileTableWidget, rdata, item, useRSA]))
+                                                    fileTableWidget, rdata, item, useRSA, script]))
             # 双击事件
             fileTableWidget.doubleClicked.connect(partial(self.fileTableDoubleClicked, [url, password, treeWidget,
-                                                                                        fileTableWidget, rdata, item, useRSA]))
+                                                                                        fileTableWidget, rdata, item, useRSA, script]))
         except Exception as e:
             QtWidgets.QMessageBox.about(self.mainWindow, "连接失败！", str(Exception(e)))
 
@@ -577,10 +670,12 @@ class DisplayShellData:
         treeWidget = data[2]
         fileTableWidget = data[3]
         rdata = data[4]
-        doubleClicked = data[6]
         useRSA = data[5]
+        script = data[6]
+        doubleClicked = data[7]
+
         if doubleClicked:
-            citem = data[7]
+            citem = data[8]
             current_item = citem
             treeWidget.setCurrentItem(current_item)
         else:
@@ -588,8 +683,11 @@ class DisplayShellData:
         dir = self.parsePath(current_item, rdata)
 
         try:
-            # 更新文件列表
-            files = scanDir(url, password, dir, useRSA).split('\n')
+            # 更新文件目录
+            if script == 'JSP':
+                files = jspCore.scanDir(url, password, dir).split('\n')
+            else:
+                files = phpCore.scanDir(url, password, dir, useRSA).split('\n')
             files = list(filter(None, files))
             self.updataTable(files, fileTableWidget)
 

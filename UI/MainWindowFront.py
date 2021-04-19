@@ -10,7 +10,7 @@
 from qqwry import QQwry
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from Core.php.ConnectToShellPhp import dns_resolver
+from Core.base import dns_resolver
 import os
 import sys
 import json
@@ -63,7 +63,7 @@ class Ui_MainWindow(object):
         self.shellTableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.shellTableWidget.setRowCount(0)
         self.shellTableWidget.setObjectName("tableWidget")
-        self.shellTableWidget.setColumnCount(7)
+        self.shellTableWidget.setColumnCount(8)
         item = QtWidgets.QTableWidgetItem()
         self.shellTableWidget.setHorizontalHeaderItem(0, item)
         item = QtWidgets.QTableWidgetItem()
@@ -78,6 +78,8 @@ class Ui_MainWindow(object):
         self.shellTableWidget.setHorizontalHeaderItem(5, item)
         item = QtWidgets.QTableWidgetItem()
         self.shellTableWidget.setHorizontalHeaderItem(6, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.shellTableWidget.setHorizontalHeaderItem(7, item)
         self.shellTableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.shellTableWidget.verticalHeader().setVisible(False)
         self.horizontalLayout_2.addWidget(self.shellTableWidget)
@@ -128,12 +130,14 @@ class Ui_MainWindow(object):
         item.setText(_translate("MainWindow", "修改时间"))
         item = self.shellTableWidget.horizontalHeaderItem(6)
         item.setText(_translate("MainWindow", "流量加密"))
+        item = self.shellTableWidget.horizontalHeaderItem(7)
+        item.setText(_translate("MainWindow", "脚本类型"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "主页面"))
         self.menu_shell.setTitle(_translate("MainWindow", "生成shell"))
         self.menu.setTitle(_translate("MainWindow", "文件"))
         self.genShellPhp.setText(_translate("MainWindow", "php RSA流量加密"))
         self.genShellJsp.setText(_translate("MainWindow", "jsp Shell"))
-        self.actionExit.setText(_translate("MainWindow", "退出"))
+        self.actionExit.setText(_translate("MainWindow", "退出（不保存数据）"))
 
     '''
     +--------------------------------------+
@@ -206,6 +210,11 @@ class Ui_MainWindow(object):
                     newItem = QtWidgets.QTableWidgetItem(data["流量加密"])
                     newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
                     self.shellTableWidget.setItem(int(index), 6, newItem)
+
+                    # 脚本类型选项
+                    newItem = QtWidgets.QTableWidgetItem(data["脚本类型"])
+                    newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                    self.shellTableWidget.setItem(int(index), 7, newItem)
         except:
             pass
 
@@ -231,6 +240,7 @@ class Ui_MainWindow(object):
                 data["网站备注"] = self.shellTableWidget.item(i, 4).text()
                 data["修改时间"] = self.shellTableWidget.item(i, 5).text()
                 data["流量加密"] = self.shellTableWidget.item(i, 6).text()
+                data["脚本类型"] = self.shellTableWidget.item(i, 7).text()
                 js[i] = data
 
             with open(current_path + "/cache/db.json", "w") as f:
@@ -268,6 +278,7 @@ class Ui_MainWindow(object):
         password = data[1]
         memo = data[2]
         UseRSA = data[3]
+        script = data[4]
         if self.row_num == -1:
             self.index = self.shellTableWidget.rowCount()
             self.shellTableWidget.setRowCount(self.index + 1)
@@ -319,6 +330,12 @@ class Ui_MainWindow(object):
             newItem = QtWidgets.QTableWidgetItem('否')
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         self.shellTableWidget.setItem(self.index, 6, newItem)
+
+
+        # 添加脚本类型
+        newItem = QtWidgets.QTableWidgetItem(script)
+        newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        self.shellTableWidget.setItem(self.index, 7, newItem)
 
 
     '''

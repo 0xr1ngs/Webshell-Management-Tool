@@ -5,7 +5,7 @@
 # datetime: 2021/1/8 18:16
 # software: PyCharm
 
-import requests, urllib.parse, socket, os, sys, json
+import requests, os, sys, json
 from random import randint
 from base64 import b64encode, b64decode
 from Crypto.PublicKey import RSA
@@ -20,18 +20,8 @@ def genRandomStr(num):
     return r
 
 
-def dns_resolver(url):
-    parse = urllib.parse.urlparse(url)
-    url_new = parse.netloc
-    if url_new == '':
-        raise Exception('URL Format Error!')
-    result = socket.getaddrinfo(url_new, None)
-    IP = result[0][4][0]
-
-    return IP
-
-
 def encrypt(plaintext):
+
     def pad(plaintext):
         tmp = chr(0x01) + chr(0xff) * (125 - len(plaintext)) + chr(0x00) + plaintext
         return bytes([ord(c) for c in tmp])
@@ -199,27 +189,6 @@ def readFile(url, password, file, useRSA):
 
     return requestAndResponse(url, data, ra, rb)
 
-
-def formatFileSize(bytes, precision):
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']:
-        if abs(bytes) < 1024.0:
-            return '%s %s' % (format(bytes, '.%df' % precision), unit)
-        bytes /= 1024.0
-    return '%s %s' % (format(bytes, '.%df' % precision), 'Yi')
-
-
-# 是否超过最大大小
-def maxFileSize(filesize):
-    num, type = filesize.split(' ')
-    if type in ['GB', 'TB', 'PB', 'EB', 'ZB']:
-        return True
-    elif type == 'MB':
-        if float(num) > 10:
-            return True
-        else:
-            return False
-    else:
-        return False
 
 def requestAndResponse(url, data, ra, rb):
     r = requests.post(url, data, timeout=0.8)

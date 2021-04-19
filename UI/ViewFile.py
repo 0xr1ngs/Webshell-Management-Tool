@@ -2,12 +2,9 @@ from PyQt5.QtCore import *
 from PyQt5.Qsci import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-from Core.php.ConnectToShellPhp import *
+import Core.php.ConnectToShellPhp as phpCore
+import Core.jsp.ConnectToShellJsp as jspCore
 import keyword
-
-
-
-
 
 class highlight(QsciLexerPython):
     def __init__(self, parent):
@@ -39,14 +36,18 @@ class highlight(QsciLexerPython):
 
 
 class setEditor(QsciScintilla):
-    def __init__(self, url, password, mainWindow, filenameArg, useRSA):
+    def __init__(self, url, password, mainWindow, filenameArg, useRSA, script):
         QsciScintilla.__init__(self)
         self.url = url
         self.password = password
         self.useRSA = useRSA
         self.mainWindow = mainWindow
         self.filenameArg = filenameArg
-        self.fileConetent = downloadFile(url, password, filenameArg, useRSA)
+        self.script = script
+        if self.script == 'JSP':
+            self.fileConetent = jspCore.downloadFile(url, password, filenameArg)
+        else:
+            self.fileConetent = phpCore.downloadFile(url, password, filenameArg, useRSA)
         self.tabWidget = mainWindow.tabWidget
         
     def set(self):
@@ -151,6 +152,9 @@ class setEditor(QsciScintilla):
 
     def save(self):
         self.mod = False
-        r = uploadFile(self.url, self.password, self.text(), self.filenameArg, self.useRSA)
+        if self.script == 'JSP':
+            r = jspCore.uploadFile(self.url, self.password, self.text(), self.filenameArg)
+        else:
+            r = phpCore.uploadFile(self.url, self.password, self.text(), self.filenameArg, self.useRSA)
         if r != '1':
             raise Exception('可能没有权限')
