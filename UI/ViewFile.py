@@ -2,8 +2,11 @@ from PyQt5.QtCore import *
 from PyQt5.Qsci import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-from Core.php.connectToShell import *
+from Core.php.ConnectToShellPhp import *
 import keyword
+
+
+
 
 
 class highlight(QsciLexerPython):

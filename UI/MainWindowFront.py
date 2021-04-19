@@ -10,17 +10,19 @@
 from qqwry import QQwry
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from Core.php.connectToShell import dns_resolver
+from Core.php.ConnectToShellPhp import dns_resolver
 import os
 import sys
 import json
 import time
-import addShell
-import genShellPhp
-import displayShellDataTab
+import AddShell
+import GenShellPhp
+import GenShellJsp
+import DisplayShellDataTab
 
 
 class Ui_MainWindow(object):
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(960, 720)
@@ -95,10 +97,13 @@ class Ui_MainWindow(object):
         MainWindow.setMenuBar(self.menubar)
         self.genShellPhp = QtWidgets.QAction(MainWindow)
         self.genShellPhp.setObjectName("genShellPhp")
-        self.action_shell = QtWidgets.QAction(MainWindow)
-        self.action_shell.setObjectName("action_shell")
+        self.genShellJsp = QtWidgets.QAction(MainWindow)
+        self.genShellJsp.setObjectName("genShellJsp")
+        self.actionExit = QtWidgets.QAction(MainWindow)
+        self.actionExit.setObjectName("aactionExit")
         self.menu_shell.addAction(self.genShellPhp)
-        self.menu.addAction(self.action_shell)
+        self.menu_shell.addAction(self.genShellJsp)
+        self.menu.addAction(self.actionExit)
         self.menubar.addAction(self.menu.menuAction())
         self.menubar.addAction(self.menu_shell.menuAction())
 
@@ -127,28 +132,36 @@ class Ui_MainWindow(object):
         self.menu_shell.setTitle(_translate("MainWindow", "生成shell"))
         self.menu.setTitle(_translate("MainWindow", "文件"))
         self.genShellPhp.setText(_translate("MainWindow", "php RSA流量加密"))
-        self.action_shell.setText(_translate("MainWindow", "添加shell"))
+        self.genShellJsp.setText(_translate("MainWindow", "jsp Shell"))
+        self.actionExit.setText(_translate("MainWindow", "退出"))
+
+    '''
+    +--------------------------------------+
+    |     以上是UI设置， 以下是界面功能        |
+    +--------------------------------------+    
+    '''
 
     '''
     从cache中读取shell数据，并且重写close方法，在点击关闭后自动保存当前的数据到cache里面
     '''
 
     def initTable(self):
-        '''
-        相关参数
-        '''
+
+        #相关参数
         self.tabMaxIndex = 0
-        self.tabIndex = [0]
+        self.tabIndex = [0] #tab的标签序号，用于关闭标签
         self.row_num = -1
         self.index = -1
+
         '''
         信号和槽函数
         '''
         self.genShellPhp.triggered.connect(self.gen_shell_php)
+        self.genShellJsp.triggered.connect(self.gen_shell_Jsp)
+        self.actionExit.triggered.connect(quit)
         self.shellTableWidget.customContextMenuRequested.connect(self.generateMenu)
         self.shellTableWidget.doubleClicked.connect(self.shellTableDoubleClicked)
-
-        self.ds = displayShellDataTab.displayShellData(self)
+        self.ds = DisplayShellDataTab.DisplayShellData(self)
 
         '''
         从cache中读取数据，也可能没有
@@ -195,10 +208,15 @@ class Ui_MainWindow(object):
                     self.shellTableWidget.setItem(int(index), 6, newItem)
         except:
             pass
+
         self.shellTableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.shellTableWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         self.shellTableWidget.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
         self.shellTableWidget.horizontalHeader().setSectionResizeMode(6, QtWidgets.QHeaderView.ResizeToContents)
+
+    '''
+    重写close方法，使得退出之前自动保存shell数据
+    '''
 
     def closeEvent(self, Event):
         if self.index != -1:
@@ -221,27 +239,31 @@ class Ui_MainWindow(object):
         Event.accept()
 
     '''
-    得生成全加密流量的shell
+    生成全加密流量的shell
     '''
 
     def gen_shell_php(self):
-        dg = genShellPhp.Ui_Dialog()
-        dg.exec()
+        phpShell = GenShellPhp.Ui_Dialog()
+        phpShell.exec()
+
+    def gen_shell_Jsp(self):
+        jspShell = GenShellJsp.Ui_Dialog()
+        jspShell.exec()
 
     '''
     展示添加数据页面
     '''
 
-    def add_shell(self):
-        dg = addShell.Ui_dialog()
-        dg.signalDgData.connect(self.deal_emit_slot)
+    def addShell(self):
+        dg = AddShell.Ui_dialog()
+        dg.signalDgData.connect(self.dealEmitSlot)
         dg.exec()
 
     '''
     处理窗口关闭前传过来的URL等数据
     '''
 
-    def deal_emit_slot(self, data):
+    def dealEmitSlot(self, data):
         url = data[0]
         password = data[1]
         memo = data[2]
@@ -298,6 +320,7 @@ class Ui_MainWindow(object):
         newItem.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         self.shellTableWidget.setItem(self.index, 6, newItem)
 
+
     '''
     数据列表右键打开菜单
     '''
@@ -324,7 +347,7 @@ class Ui_MainWindow(object):
                 self.ds.displayShell()
 
             elif action == item2:
-                dg = addShell.Ui_dialog()
+                dg = AddShell.Ui_dialog()
                 dg.pushButton.setText("保存")
 
                 dg.lineEdit.setText(self.shellTableWidget.item(self.row_num, 0).text())
@@ -332,7 +355,7 @@ class Ui_MainWindow(object):
                 dg.lineEdit_3.setText(self.shellTableWidget.item(self.row_num, 4).text())
                 if self.shellTableWidget.item(self.row_num, 6).text() == '是':
                     dg.checkBox.setChecked(True)
-                dg.signalDgData.connect(self.deal_emit_slot)
+                dg.signalDgData.connect(self.dealEmitSlot)
 
                 dg.exec()
             elif action == item3:
@@ -344,7 +367,7 @@ class Ui_MainWindow(object):
             item.setIcon(QtGui.QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/add_button_easyicon.svg'))
             action = menu.exec_(self.shellTableWidget.mapToGlobal(pos))
             if action == item:
-                self.add_shell()
+                self.addShell()
 
     '''
     双击数据列表时，展示数据详情

@@ -62,7 +62,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 
         self.pushButton.clicked.connect(self.genCode)
         self.pushButton_2.clicked.connect(self.copyPriKey)
-        self.pushButton_3.clicked.connect(self.cppyCode)
+        self.pushButton_3.clicked.connect(self.copyCode)
         self.retranslateUi(self)
         QtCore.QMetaObject.connectSlotsByName(self)
 
@@ -80,7 +80,7 @@ class Ui_Dialog(QtWidgets.QDialog):
         clipboard = QtWidgets.QApplication.clipboard()
         clipboard.setText(self.textEdit_2.toPlainText())
 
-    def cppyCode(self):
+    def copyCode(self):
         clipboard = QtWidgets.QApplication.clipboard()
         clipboard.setText(self.textEdit_3.toPlainText())
 

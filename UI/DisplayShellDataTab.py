@@ -7,15 +7,15 @@
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QIcon
 from functools import partial
-from Core.php.connectToShell import *
-from UI.viewFile import setEditor
+from Core.php.ConnectToShellPhp import *
+from UI.ViewFile import setEditor
 import pathlib, os, re, sys
 
 '''
 对文件列表的右键菜单操作
 '''
 
-class displayShellData:
+class DisplayShellData:
     def __init__(self, mainWindow):
         self.mainWindow = mainWindow
 

@@ -9,8 +9,8 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from Core.php.connectToShell import TestConn
-from Core.php.connectToShell import dns_resolver
+from Core.php.ConnectToShellPhp import TestConn
+from Core.php.ConnectToShellPhp import dns_resolver
 
 class Ui_dialog(QtWidgets.QDialog):
     signalDgData = QtCore.pyqtSignal(list)
