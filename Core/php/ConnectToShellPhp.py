@@ -27,7 +27,7 @@ def encrypt(plaintext):
         return bytes([ord(c) for c in tmp])
 
     try:
-        with open(current_path + "/cache/RSAkey.json", "r") as f:
+        with open(current_path + "/Cache/RSAkey.json", "r") as f:
             d = json.load(f)
             priKey = d['私钥']
             keys = RSA.importKey(priKey)

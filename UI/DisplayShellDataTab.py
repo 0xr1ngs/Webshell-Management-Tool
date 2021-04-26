@@ -47,19 +47,19 @@ class DisplayShellData:
             if fileTableWidget.item(self.mainWindow.row_num, 0).text().endswith('/'):
                 item0 = menu.addAction('上传文件')
                 item0.setIcon(
-                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/upload_easyicon.svg'))
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/upload_easyicon.svg'))
                 item1 = menu.addAction('重命名')
                 item1.setIcon(
-                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/filename_easyicon.svg'))
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/filename_easyicon.svg'))
                 item2 = menu.addAction('删除文件')
                 item2.setIcon(
-                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/delete_easyicon.svg'))
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/delete_easyicon.svg'))
                 item3 = menu.addAction('更改权限')
                 item3.setIcon(
-                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/management_easyicon.svg'))
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/management_easyicon.svg'))
                 item4 = menu.addAction('刷新目录')
                 item4.setIcon(
-                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/refresh_easyicon.svg'))
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/refresh_easyicon.svg'))
                 action = menu.exec_(fileTableWidget.mapToGlobal(pos))
 
                 if action == item0:
@@ -172,22 +172,22 @@ class DisplayShellData:
                 # 文件
                 item0 = menu.addAction('上传文件')
                 item0.setIcon(
-                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/upload_easyicon.svg'))
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/upload_easyicon.svg'))
                 item1 = menu.addAction('下载文件')
                 item1.setIcon(
-                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/download_easyicon.svg'))
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/download_easyicon.svg'))
                 item2 = menu.addAction('重命名')
                 item2.setIcon(
-                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/filename_easyicon.svg'))
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/filename_easyicon.svg'))
                 item3 = menu.addAction('删除文件')
                 item3.setIcon(
-                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/delete_easyicon.svg'))
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/delete_easyicon.svg'))
                 item4 = menu.addAction('更改权限')
                 item4.setIcon(
-                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/management_easyicon.svg'))
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/management_easyicon.svg'))
                 item5 = menu.addAction('刷新目录')
                 item5.setIcon(
-                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/refresh_easyicon.svg'))
+                    QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/refresh_easyicon.svg'))
                 action = menu.exec_(fileTableWidget.mapToGlobal(pos))
 
                 if action == item0:
@@ -311,10 +311,10 @@ class DisplayShellData:
         else:
             item1 = menu.addAction('上传文件')
             item1.setIcon(
-                QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/upload_easyicon.svg'))
+                QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/upload_easyicon.svg'))
             item2 = menu.addAction('刷新目录')
             item2.setIcon(
-                QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/refresh_easyicon.svg'))
+                QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/refresh_easyicon.svg'))
             action = menu.exec_(fileTableWidget.mapToGlobal(pos))
             if action == item1:
                 try:
@@ -517,7 +517,7 @@ class DisplayShellData:
                 self.root.setText(0, rdata[1])
                 self.root.setIcon(0,
                                   QIcon(os.path.dirname(
-                                      os.path.realpath(sys.argv[0])) + '/icons/default_root_folder_opened.svg'))
+                                      os.path.realpath(sys.argv[0])) + '/Icons/default_root_folder_opened.svg'))
             else:
                 # 处理windows路径
                 r = rdata[1].split(':')[:-1]
@@ -525,12 +525,12 @@ class DisplayShellData:
                     if i == rdata[0][0]:
                         self.root.setText(0, i + ':/')
                         self.root.setIcon(0, QIcon(
-                            os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_root_folder_opened.svg'))
+                            os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/default_root_folder_opened.svg'))
                     else:
                         root = QtWidgets.QTreeWidgetItem(treeWidget)
                         root.setText(0, i + ':/')
                         root.setIcon(0, QIcon(
-                            os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_root_folder_opened.svg'))
+                            os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/default_root_folder_opened.svg'))
 
             # 子节点
             if rdata[0][1] != ':':
@@ -544,10 +544,10 @@ class DisplayShellData:
                 item.setText(0, folders[i])
 
                 if i == len(folders) - 1:
-                    item.setIcon(0, QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder.svg'))
+                    item.setIcon(0, QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/default_folder.svg'))
                 else:
                     item.setIcon(0,
-                                 QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder_opened.svg'))
+                                 QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/default_folder_opened.svg'))
 
                 itemStack.append(item)
 
@@ -617,18 +617,18 @@ class DisplayShellData:
         if item is not None:
             if item.parent() is None:
                 item.setIcon(0, QIcon(
-                    os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_root_folder_opened.svg'))
+                    os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/default_root_folder_opened.svg'))
             else:
-                item.setIcon(0, QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder_opened.svg'))
+                item.setIcon(0, QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/default_folder_opened.svg'))
 
 
     def treeCollapsed(self, item):
         if item is not None:
             if item.parent() is None:
                 item.setIcon(0, QIcon(
-                    os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_root_folder.svg'))
+                    os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/default_root_folder.svg'))
             else:
-                item.setIcon(0, QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder.svg'))
+                item.setIcon(0, QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/default_folder.svg'))
 
 
     def updataTable(self, files, fileTableWidget):
@@ -646,15 +646,15 @@ class DisplayShellData:
                         newItem = QtWidgets.QTableWidgetItem(content)
                 elif j == 0:
                     fileType = os.path.splitext(content)[1][1:]
-                    icon = os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/file_type_' + fileType + '.svg'
+                    icon = os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/file_type_' + fileType + '.svg'
                     iconFile = pathlib.Path(icon)
                     if iconFile.is_file():
                         newItem = QtWidgets.QTableWidgetItem(QIcon(icon), content)
                     elif content.endswith('/'):
-                        icon = os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder.svg'
+                        icon = os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/default_folder.svg'
                         newItem = QtWidgets.QTableWidgetItem(QIcon(icon), content)
                     else:
-                        icon = os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_file.svg'
+                        icon = os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/default_file.svg'
                         newItem = QtWidgets.QTableWidgetItem(QIcon(icon), content)
                 else:
                     newItem = QtWidgets.QTableWidgetItem(content)
@@ -711,10 +711,10 @@ class DisplayShellData:
                         item.setText(0, fs[:-1])
                         if item.isExpanded():
                             item.setIcon(0, QIcon(
-                                os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder_opened.svg'))
+                                os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/default_folder_opened.svg'))
                         else:
                             item.setIcon(0, QIcon(
-                                os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/default_folder.svg'))
+                                os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/default_folder.svg'))
 
             item = current_item
             for i in range(childCount - 1, -1, -1):

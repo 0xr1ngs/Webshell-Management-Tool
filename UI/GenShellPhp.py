@@ -86,7 +86,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 
     def setData(self):
         try:
-            with open(self.current_path + "/cache/RSAkey.json", "r") as f:
+            with open(self.current_path + "/Cache/RSAkey.json", "r") as f:
                 d = json.load(f)
                 self.pubKey = d['公钥']
                 self.priKey = d['私钥']
@@ -151,5 +151,5 @@ eval($cmd);'''
         data = {}
         data["公钥"] = self.pubKey
         data["私钥"] = self.priKey
-        with open(self.current_path + "/cache/RSAkey.json", "w") as f:
+        with open(self.current_path + "/Cache/RSAkey.json", "w") as f:
             json.dump(data, f)

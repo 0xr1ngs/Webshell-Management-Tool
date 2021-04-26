@@ -28,7 +28,7 @@ class Ui_MainWindow(object):
         MainWindow.resize(960, 720)
         MainWindow.setMinimumSize(QtCore.QSize(800, 600))
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/knife_easyicon.net.svg'),
+        icon.addPixmap(QtGui.QPixmap(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/knife_easyicon.net.svg'),
                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
         MainWindow.setToolTipDuration(0)
@@ -172,7 +172,7 @@ class Ui_MainWindow(object):
         '''
         try:
             current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-            with open(current_path + "/cache/db.json", "r") as f:
+            with open(current_path + "/Cache/db.json", "r") as f:
                 d = json.load(f)
                 for index, data in d.items():
                     self.shellTableWidget.setRowCount(int(index) + 1)
@@ -243,7 +243,7 @@ class Ui_MainWindow(object):
                 data["脚本类型"] = self.shellTableWidget.item(i, 7).text()
                 js[i] = data
 
-            with open(current_path + "/cache/db.json", "w") as f:
+            with open(current_path + "/Cache/db.json", "w") as f:
                 json.dump(js, f)
                 # print("加载入文件完成...")
         Event.accept()
@@ -351,13 +351,13 @@ class Ui_MainWindow(object):
 
         if self.row_num != -1:
             item1 = menu.addAction('打开')
-            item1.setIcon(QtGui.QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/shell_easyicon.svg'))
+            item1.setIcon(QtGui.QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/shell_easyicon.svg'))
             item2 = menu.addAction('编辑')
-            item2.setIcon(QtGui.QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/edit_easyicon.svg'))
+            item2.setIcon(QtGui.QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/edit_easyicon.svg'))
             item3 = menu.addAction('删除')
-            item3.setIcon(QtGui.QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/delete_easyicon.svg'))
+            item3.setIcon(QtGui.QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/delete_easyicon.svg'))
             item4 = menu.addAction('查看')
-            item4.setIcon(QtGui.QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/web_easyicon.svg'))
+            item4.setIcon(QtGui.QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/web_easyicon.svg'))
             action = menu.exec_(self.shellTableWidget.mapToGlobal(pos))
 
             if action == item1:
@@ -381,7 +381,7 @@ class Ui_MainWindow(object):
                 self.displayWeb(self.shellTableWidget.item(self.row_num, 0).text())
         else:
             item = menu.addAction('新建')
-            item.setIcon(QtGui.QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/icons/add_button_easyicon.svg'))
+            item.setIcon(QtGui.QIcon(os.path.dirname(os.path.realpath(sys.argv[0])) + '/Icons/add_button_easyicon.svg'))
             action = menu.exec_(self.shellTableWidget.mapToGlobal(pos))
             if action == item:
                 self.addShell()
